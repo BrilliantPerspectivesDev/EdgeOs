@@ -6,10 +6,10 @@ import dynamic from 'next/dynamic'
 import { LoadingScreen } from '@/components/loading-screen'
 import { useAuth } from '@/lib/auth-context'
 
-const DynamicExecutiveDashboard = dynamic(
-  () => import('@/components/executive-dashboard'),
-  { 
-    loading: () => <LoadingScreen />,
+const ExecutiveDashboard = dynamic(
+  () => import('@/app/components/executive-dashboard'),
+  {
+    loading: () => <div>Loading...</div>,
     ssr: false
   }
 )
@@ -32,6 +32,6 @@ export default function ExecutiveDashboardPage() {
     return null
   }
 
-  return <DynamicExecutiveDashboard />
+  return <ExecutiveDashboard />
 }
 
