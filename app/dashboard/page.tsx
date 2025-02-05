@@ -22,7 +22,7 @@ export default function Dashboard() {
           router.push('/dashboard/executive')
           break
         case 'supervisor':
-          router.push('/dashboard/supervisor')
+          router.push('/')
           break
         case 'team_member':
           router.push('/')

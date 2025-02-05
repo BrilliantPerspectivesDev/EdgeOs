@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth'
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
 import { auth, db } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,9 +14,10 @@ import { toast } from "@/components/ui/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const isValidEmail = (email: string) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
+  // Use a simpler email validation pattern
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailPattern.test(email)
+}
 
 const isValidPassword = (password: string) => {
   // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
@@ -137,122 +138,111 @@ export default function CompanySetup() {
           return;
         }
 
-        // Create the executive user first
+        // Create the executive user first with email/password
         const userCredential = await createUserWithEmailAndPassword(auth, executiveEmail, executivePassword)
         const executiveUid = userCredential.user.uid
 
-        try {
-          // Create the company document
-          await setDoc(companyRef, {
-            name: companyName,
-            size: parseInt(companySize),
-            createdAt: new Date().toISOString(),
-            executiveUid: executiveUid,
-            supervisors: [],
-            teamMembers: [],
-            settings: {
-              lastUpdated: new Date().toISOString(),
-              trainingEnabled: true,
-              worksheetsEnabled: true,
-              standupNotesEnabled: true
+        // Sign in immediately after creating the user to ensure auth state is propagated
+        await signInWithEmailAndPassword(auth, executiveEmail, executivePassword)
+        
+        // Wait for auth state to be fully initialized
+        await new Promise((resolve) => {
+          const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user) {
+              unsubscribe();
+              resolve(user);
             }
-          })
+          });
+        });
 
-          // Create the executive user document
-          await setDoc(doc(db, 'users', executiveUid), {
-            email: executiveEmail,
-            firstName: executiveFirstName,
-            lastName: executiveLastName,
-            role: 'executive',
-            companyName: companyName,
-            permissions: ['executive', 'supervisor', 'team_member'],
-            createdAt: new Date().toISOString(),
-            lastActive: new Date().toISOString(),
-            supervisorId: '',
-            teamMembers: [],
-            trainingProgress: {
-              lastUpdated: new Date().toISOString(),
-              completedVideos: 0,
-              totalVideos: 0,
-              progress: 0
-            }
-          })
-
-          // Initialize company statistics document
-          await setDoc(doc(db, 'companies', companyName, 'statistics', 'overview'), {
-            totalUsers: 1,
-            activeUsers: 1,
-            completedTrainings: 0,
-            averageProgress: 0,
-            lastUpdated: new Date().toISOString()
-          })
-
-          // Initialize company metrics document
-          await setDoc(doc(db, 'companies', companyName, 'metrics', 'training'), {
-            totalVideosWatched: 0,
-            totalWorksheetsDone: 0,
-            totalStandupNotes: 0,
-            lastUpdated: new Date().toISOString()
-          })
-
-          // Initialize empty collections that will be needed
-          const collectionsToInitialize = [
-            'standups',
-            'worksheets',
-            'boldActions',
-            'notifications'
-          ]
-
-          for (const collectionName of collectionsToInitialize) {
-            // Create a placeholder document in each collection that we can delete later
-            await setDoc(
-              doc(db, 'companies', companyName, collectionName, '_initialized'), 
-              {
-                createdAt: new Date().toISOString(),
-                isPlaceholder: true
-              }
-            )
+        // Create the company document
+        await setDoc(companyRef, {
+          name: companyName,
+          size: parseInt(companySize),
+          createdAt: new Date().toISOString(),
+          executiveUid: executiveUid,
+          supervisors: [],
+          teamMembers: [],
+          settings: {
+            lastUpdated: new Date().toISOString(),
+            trainingEnabled: true,
+            worksheetsEnabled: true,
+            standupNotesEnabled: true
           }
+        })
 
-          // Sign in the user
-          await signInWithEmailAndPassword(auth, executiveEmail, executivePassword)
+        // Create the executive user document
+        await setDoc(doc(db, 'users', executiveUid), {
+          email: executiveEmail,
+          firstName: executiveFirstName,
+          lastName: executiveLastName,
+          displayName: `${executiveFirstName} ${executiveLastName}`,
+          role: 'executive',
+          companyName: companyName,
+          permissions: ['executive', 'supervisor', 'team_member'],
+          createdAt: new Date().toISOString(),
+          lastActive: new Date().toISOString(),
+          supervisorId: '',
+          teamMembers: [],
+          trainingProgress: {
+            lastUpdated: new Date().toISOString(),
+            completedVideos: 0,
+            totalVideos: 0,
+            progress: 0
+          }
+        })
 
-          toast({
-            title: "Company Created Successfully",
-            description: "Your company has been set up and you're now logged in as an executive. Redirecting to dashboard...",
-          })
+        // Initialize company statistics document
+        await setDoc(doc(db, 'companies', companyName, 'statistics', 'overview'), {
+          totalUsers: 1,
+          activeUsers: 1,
+          completedTrainings: 0,
+          averageProgress: 0,
+          lastUpdated: new Date().toISOString()
+        })
 
-          // Redirect to dashboard after a short delay
-          setTimeout(() => {
-            router.push('/dashboard')
-          }, 2000)
+        // Initialize company metrics document
+        await setDoc(doc(db, 'companies', companyName, 'metrics', 'training'), {
+          totalVideosWatched: 0,
+          totalWorksheetsDone: 0,
+          totalStandupNotes: 0,
+          lastUpdated: new Date().toISOString()
+        })
 
-        } catch (error) {
-          // If company creation fails, delete the user account
-          await userCredential.user.delete()
-          throw error;
+        // Initialize empty collections that will be needed
+        const collectionsToInitialize = [
+          'standups',
+          'worksheets',
+          'boldActions',
+          'notifications'
+        ]
+
+        for (const collectionName of collectionsToInitialize) {
+          // Create a placeholder document in each collection that we can delete later
+          await setDoc(
+            doc(db, 'companies', companyName, collectionName, '_initialized'), 
+            {
+              createdAt: new Date().toISOString(),
+              isPlaceholder: true
+            }
+          )
         }
+
+        // Wait for auth state to be fully propagated
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Use router instead of window.location
+        router.push('/');
 
       } catch (error) {
+        console.error('Company creation error:', error)
         if (error instanceof Error) {
-          if (error.message.includes('auth/email-already-in-use')) {
-            setError('This email is already registered. Please use a different email address or reset your password.');
-          } else if (error.message.includes('auth/invalid-email')) {
-            setError('Please enter a valid email address.');
-          } else if (error.message.includes('auth/weak-password')) {
-            setError('Please choose a stronger password. It should be at least 8 characters long.');
-          } else if (error.message.includes('network')) {
-            setError('Network error. Please check your internet connection and try again.');
-          } else {
-            setError('An error occurred while creating your company. Please try again or contact support if the problem persists.');
-            console.error('Company creation error:', error);
-          }
+          setError(error.message)
         } else {
-          setError('An unexpected error occurred. Please try again or contact support.');
-          console.error('Unknown error:', error);
+          setError('Failed to create company. Please try again.')
         }
       } finally {
-        setIsSubmitting(false);
+        setIsSubmitting(false)
       }
     }
   }

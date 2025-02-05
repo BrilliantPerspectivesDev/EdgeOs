@@ -4,20 +4,45 @@ import { useState } from 'react';
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, Library, Target, Users, LayoutDashboard, Cog, Settings, LogOut, HelpCircle } from 'lucide-react';
+import { BookOpen, Library, Target, Users, LayoutDashboard, Cog, Settings, LogOut, HelpCircle, Building } from 'lucide-react';
 import { AccountSettingsModal } from './account-settings-modal';
 import { OnboardingModal } from './onboarding-modal';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
 import { useOnboarding } from '@/lib/hooks/use-onboarding';
 
+interface NavItem {
+  name: string;
+  href: string;
+  icon: string;
+}
+
+type NavigationItems = {
+  team_member: NavItem[];
+  supervisor: NavItem[];
+  executive: NavItem[];
+}
+
 interface NavItemProps {
   href?: string;
-  icon: React.ElementType;
+  icon: any;
   label: string;
   isActive?: boolean;
   onClick?: () => void;
 }
+
+const iconMap = {
+  BookOpen,
+  Library,
+  Target,
+  Users,
+  LayoutDashboard,
+  Cog,
+  Settings,
+  LogOut,
+  HelpCircle,
+  Building: LayoutDashboard // Using LayoutDashboard for Building icon as fallback
+};
 
 const NavItem = ({ href, icon: Icon, label, isActive, onClick }: NavItemProps) => {
   const content = (
@@ -50,7 +75,7 @@ const NavItem = ({ href, icon: Icon, label, isActive, onClick }: NavItemProps) =
 const MainSidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { userRole } = useAuth();
+  const { userRole, companyName } = useAuth();
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const { showOnboarding } = useOnboarding();
@@ -69,30 +94,47 @@ const MainSidebar = () => {
 
   // Define navigation items based on user role
   const getNavigationItems = () => {
+    const navigationItems: NavigationItems = {
+      team_member: [
+        { name: 'My Learning', href: '/', icon: 'BookOpen' },
+        { name: 'Training Library', href: '/training-library', icon: 'Library' },
+        { name: 'Bold Actions', href: '/bold-actions', icon: 'Target' }
+      ],
+      supervisor: [
+        { name: 'My Learning', href: '/', icon: 'BookOpen' },
+        { name: 'Training Library', href: '/training-library', icon: 'Library' },
+        { name: 'Bold Actions', href: '/bold-actions', icon: 'Target' },
+        { name: 'My Team', href: '/my-team', icon: 'Users' },
+        ...(companyName === 'Brilliant Perspectives' ? [{ name: 'Admin', href: '/admin', icon: 'LayoutDashboard' }] : [])
+      ],
+      executive: [
+        { name: 'My Learning', href: '/', icon: 'BookOpen' },
+        { name: 'Training Library', href: '/training-library', icon: 'Library' },
+        { name: 'Bold Actions', href: '/bold-actions', icon: 'Target' },
+        { name: 'My Team', href: '/my-team', icon: 'Users' },
+        { name: 'Executive Dashboard', href: '/executive', icon: 'Building' },
+        ...(companyName === 'Brilliant Perspectives' ? [{ name: 'Admin', href: '/admin', icon: 'LayoutDashboard' }] : []),
+        { name: 'Company Settings', href: '/company-settings', icon: 'Cog' }
+      ]
+    }
+
     const learningItems = (
       <div>
         <h2 className="px-4 text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">
           LEARNING
         </h2>
         <div className="space-y-1">
-          <NavItem 
-            href="/" 
-            icon={BookOpen} 
-            label="Home" 
-            isActive={pathname === '/'} 
-          />
-          <NavItem 
-            href="/training-library" 
-            icon={Library} 
-            label="Learning Library" 
-            isActive={pathname === '/training-library'} 
-          />
-          <NavItem 
-            href="/bold-actions" 
-            icon={Target} 
-            label="Bold Actions" 
-            isActive={pathname === '/bold-actions'} 
-          />
+          {userRole && navigationItems[userRole] ? navigationItems[userRole]
+            .filter(item => !['My Team', 'Executive Dashboard', 'Company Settings', 'Admin'].includes(item.name))
+            .map((item, index) => (
+              <NavItem 
+                key={index}
+                href={item.href} 
+                icon={iconMap[item.icon as keyof typeof iconMap]} 
+                label={item.name} 
+                isActive={pathname === item.href} 
+              />
+            )) : null}
         </div>
       </div>
     );
@@ -103,20 +145,17 @@ const MainSidebar = () => {
           OVERVIEW
         </h2>
         <div className="space-y-1">
-          <NavItem 
-            href="/my-team" 
-            icon={Users} 
-            label="My Team" 
-            isActive={pathname === '/my-team'} 
-          />
-          {userRole === 'executive' && (
-            <NavItem 
-              href="/executive" 
-              icon={LayoutDashboard} 
-              label="Executive Overview" 
-              isActive={pathname === '/executive'} 
-            />
-          )}
+          {userRole && navigationItems[userRole] ? navigationItems[userRole]
+            .filter(item => ['My Team', 'Executive Dashboard', 'Admin'].includes(item.name))
+            .map((item, index) => (
+              <NavItem 
+                key={index}
+                href={item.href} 
+                icon={iconMap[item.icon as keyof typeof iconMap]} 
+                label={item.name} 
+                isActive={pathname === item.href} 
+              />
+            )) : null}
         </div>
       </div>
     );
@@ -128,12 +167,17 @@ const MainSidebar = () => {
           COMPANY
         </h2>
         <div className="space-y-1">
-          <NavItem 
-            href="/company-settings" 
-            icon={Cog} 
-            label="Company Settings" 
-            isActive={pathname === '/company-settings'} 
-          />
+          {userRole && navigationItems[userRole] ? navigationItems[userRole]
+            .filter(item => ['Company Settings'].includes(item.name))
+            .map((item, index) => (
+              <NavItem 
+                key={index}
+                href={item.href} 
+                icon={iconMap[item.icon as keyof typeof iconMap]} 
+                label={item.name} 
+                isActive={pathname === item.href} 
+              />
+            )) : null}
         </div>
       </div>
     );

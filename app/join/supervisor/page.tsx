@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { setDoc, doc, getDoc, updateDoc, arrayUnion, runTransaction } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
@@ -66,71 +66,109 @@ export default function SupervisorSignup() {
     setIsSubmitting(true)
 
     try {
-      // Use a transaction to ensure all operations succeed or fail together
-      await runTransaction(db, async (transaction) => {
-        // Create user account first
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-        const uid = userCredential.user.uid
-        
-        // Set display name
-        await userCredential.user.updateProfile({
-          displayName: `${firstName} ${lastName}`
-        })
-        
-        // Get company reference
-        const companyRef = doc(db, 'companies', companyName)
-        const companyDoc = await transaction.get(companyRef)
-        
-        if (!companyDoc.exists()) {
-          throw new Error('Company not found')
-        }
+      // Verify company exists first
+      console.log('Verifying company...')
+      const companyRef = doc(db, 'companies', companyName)
+      const companyDoc = await getDoc(companyRef)
+      
+      if (!companyDoc.exists()) {
+        console.error('Company not found:', companyName)
+        throw new Error('Company not found')
+      }
+      console.log('Company verified:', companyName)
 
-        // Create user document
-        const userRef = doc(db, 'users', uid)
-        transaction.set(userRef, {
-          firstName,
-          lastName,
-          email,
-          role: 'supervisor',
-          companyName,
-          permissions: ['supervisor', 'team_member'],
-          lastActive: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          supervisorId: '',
-          teamMembers: [],
-          trainingProgress: {
-            lastUpdated: new Date().toISOString(),
-            completedVideos: 0,
-            totalVideos: 0,
-            progress: 0
-          }
-        })
-
-        // Update company document
-        const currentSupervisors = companyDoc.data()?.supervisors || []
-        transaction.update(companyRef, {
-          supervisors: [...currentSupervisors, uid],
-          updatedAt: new Date().toISOString()
-        })
+      // Create user account
+      console.log('Creating user account...')
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const user = userCredential.user
+      const uid = user.uid
+      console.log('User account created:', uid)
+      
+      // Set display name
+      console.log('Setting display name...')
+      await updateProfile(user, {
+        displayName: `${firstName} ${lastName}`
       })
+      console.log('Display name set successfully')
+
+      // Create user document
+      console.log('Creating user document...')
+      const userRef = doc(db, 'users', uid)
+      await setDoc(userRef, {
+        firstName,
+        lastName,
+        email,
+        role: 'supervisor',
+        companyName,
+        permissions: ['supervisor', 'team_member'],
+        lastActive: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        supervisorId: '',
+        teamMembers: [],
+        trainingProgress: {
+          lastUpdated: new Date().toISOString(),
+          completedVideos: 0,
+          totalVideos: 0,
+          progress: 0
+        }
+      })
+      console.log('User document created')
+
+      // Update company document
+      console.log('Updating company document...')
+      const currentSupervisors = companyDoc.data()?.supervisors || []
+      await updateDoc(companyRef, {
+        supervisors: [...currentSupervisors, uid],
+        updatedAt: new Date().toISOString()
+      })
+      console.log('Company document updated')
 
       toast({
         title: "Account Created",
         description: "Your supervisor account has been created successfully. Redirecting to dashboard...",
       })
 
-      // Redirect to dashboard
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 1000)
+      // Wait for auth state to be fully propagated
+      console.log('Waiting for auth state propagation...')
+      let attempts = 0
+      const maxAttempts = 5
+      
+      while (attempts < maxAttempts) {
+        // Force a refresh of the ID token to ensure latest claims
+        await user.getIdToken(true)
+        
+        // Verify the user is still signed in
+        const currentUser = auth.currentUser
+        if (currentUser && currentUser.uid === uid) {
+          console.log('Auth state verified on attempt', attempts + 1)
+          
+          // Verify user document exists
+          const userDoc = await getDoc(userRef)
+          if (userDoc.exists()) {
+            console.log('User document verified')
+            router.push('/')
+            return
+          }
+        }
+        
+        console.log('Auth state not ready, waiting...')
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        attempts++
+      }
+
+      throw new Error('Failed to verify authentication state')
 
     } catch (error) {
       console.error('Error creating account:', error)
       
       // If we have a user but the transaction failed, clean up the auth account
       if (auth.currentUser) {
-        await auth.currentUser.delete()
+        try {
+          await auth.currentUser.delete()
+        } catch (deleteError) {
+          console.error('Error cleaning up auth account:', deleteError)
+        }
       }
 
       if (error instanceof Error) {
@@ -142,6 +180,9 @@ export default function SupervisorSignup() {
           setError('Password should be at least 6 characters')
         } else if (error.message.includes('Company not found')) {
           setError('Invalid company. Please contact your administrator.')
+        } else if (error.message.includes('Failed to verify authentication state')) {
+          setError('Account created but failed to verify. Please try signing in.')
+          router.push('/signin')
         } else {
           setError('Failed to create account. Please try again.')
         }

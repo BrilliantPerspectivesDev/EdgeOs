@@ -34,6 +34,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [companyId, setCompanyId] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState<string | null>(null)
   const [permissions, setPermissions] = useState<string[]>([])
+  const [initialized, setInitialized] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
     let unsubscribe: () => void = () => {}
@@ -48,12 +50,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         // Set persistence to LOCAL
         await setPersistence(firebaseAuth as Auth, browserLocalPersistence)
+        setInitialized(true)
       } catch (error) {
         console.error('Error setting auth persistence:', error)
+        setLoading(false)
+        return
       }
 
       unsubscribe = onAuthStateChanged(firebaseAuth as Auth, async (user) => {
-        console.log('Auth state changed:', { userId: user?.uid, pathname })
+        console.log('Auth state changed:', { 
+          userId: user?.uid, 
+          pathname, 
+          initialized: true,
+          retryCount
+        })
+        
         setUser(user)
         
         // Updated auth pages check
@@ -69,53 +80,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setCompanyName(null)
           setPermissions([])
           
-          // Only redirect to signin if not already on an auth page
-          if (!isAuthPage) {
+          // Only redirect to signin if not already on an auth page and if initialized
+          if (!isAuthPage && initialized) {
             console.log('No user, redirecting to signin')
             router.push('/signin')
           }
         } else {
           try {
+            // Add a small delay to ensure Firestore is ready
+            await new Promise(resolve => setTimeout(resolve, 500))
+            
             const userDoc = await getDoc(doc(db as Firestore, 'users', user.uid))
             
             if (userDoc.exists()) {
               const userData = userDoc.data()
               const role = userData.role as LMSRole
               
-              console.log('User data loaded:', { role, companyName: userData.companyName })
+              console.log('User data loaded:', { 
+                role, 
+                companyName: userData.companyName,
+                userId: user.uid,
+                permissions: userData.permissions || []
+              })
               
               setUserRole(role)
               setCompanyId(userData.companyId || null)
               setCompanyName(userData.companyName || null)
 
-              // Sync display name if it doesn't match
-              const displayName = `${userData.firstName} ${userData.lastName}`
-              if (user.displayName !== displayName) {
-                try {
-                  await user.updateProfile({
-                    displayName
-                  })
-                } catch (error) {
-                  console.error('Error updating display name:', error)
-                }
-              }
-
               // Sync roles and get permissions
+              console.log('Syncing user roles...')
               const syncedRoles = await syncUserRoles(user, role, {
                 companyId: userData.companyId,
                 companyName: userData.companyName
               })
+              console.log('Roles synced:', syncedRoles)
 
               setPermissions(syncedRoles.permissions)
 
               // If on an auth page and authenticated, redirect to home
-              if (isAuthPage) {
-                console.log('User authenticated, redirecting to home')
+              if (isAuthPage && initialized) {
+                console.log('User authenticated, redirecting from auth page')
                 router.push('/')
               }
             } else {
               console.error('No user document found for:', user.uid)
-              if (!isAuthPage) {
+              
+              // If we haven't tried too many times and we're not on an auth page
+              if (retryCount < 3 && !isAuthPage) {
+                console.log('Retrying user document fetch...')
+                setRetryCount(prev => prev + 1)
+                // Wait a bit longer before retrying
+                await new Promise(resolve => setTimeout(resolve, 1000))
+                // The effect will re-run due to retryCount change
+              } else if (!isAuthPage) {
                 router.push('/signin')
               }
             }
@@ -134,7 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth()
 
     return () => unsubscribe()
-  }, [router, pathname])
+  }, [router, pathname, initialized, retryCount])
 
   return (
     <AuthContext.Provider value={{ 
