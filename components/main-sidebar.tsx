@@ -54,7 +54,9 @@ const NavItem = ({ href, icon: Icon, label, isActive, onClick }: NavItemProps) =
 
   const className = cn(
     "flex items-center gap-4 px-4 py-2.5 transition-colors text-[15px]",
-    isActive ? "bg-[#F5A524] text-white rounded-full" : "text-gray-300 hover:text-white"
+    isActive 
+      ? "bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] text-white rounded-full" 
+      : "text-gray-300 hover:text-white"
   );
 
   if (onClick) {
@@ -104,8 +106,7 @@ const MainSidebar = () => {
         { name: 'My Learning', href: '/', icon: 'BookOpen' },
         { name: 'Training Library', href: '/training-library', icon: 'Library' },
         { name: 'Bold Actions', href: '/bold-actions', icon: 'Target' },
-        { name: 'My Team', href: '/my-team', icon: 'Users' },
-        ...(companyName === 'Brilliant Perspectives' ? [{ name: 'Admin', href: '/admin', icon: 'LayoutDashboard' }] : [])
+        { name: 'My Team', href: '/my-team', icon: 'Users' }
       ],
       executive: [
         { name: 'My Learning', href: '/', icon: 'BookOpen' },
@@ -113,7 +114,6 @@ const MainSidebar = () => {
         { name: 'Bold Actions', href: '/bold-actions', icon: 'Target' },
         { name: 'My Team', href: '/my-team', icon: 'Users' },
         { name: 'Executive Dashboard', href: '/executive', icon: 'Building' },
-        ...(companyName === 'Brilliant Perspectives' ? [{ name: 'Admin', href: '/admin', icon: 'LayoutDashboard' }] : []),
         { name: 'Company Settings', href: '/company-settings', icon: 'Cog' }
       ]
     }

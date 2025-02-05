@@ -115,7 +115,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] p-0 gap-0 bg-gradient-to-b from-background to-muted/30">
-        <div className="p-6 pb-4 bg-gradient-to-b from-[#F5A524] to-[#F5A524]/80">
+        <div className="p-6 pb-4 bg-gradient-to-r from-[#1E3A8A] to-[#2563EB]">
           <DialogHeader>
             <div className="flex items-center gap-4">
               {currentStepData.icon && (
@@ -125,7 +125,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
               )}
               <div>
                 <DialogTitle className="text-2xl text-white">{currentStepData.title}</DialogTitle>
-                <p className="text-white/80 mt-1">{currentStepData.description}</p>
+                <p className="text-white/80">{currentStepData.description}</p>
               </div>
             </div>
           </DialogHeader>
@@ -135,7 +135,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
           <div className="space-y-4">
             {currentStepData.content.map((item, index) => (
               <div key={index} className="flex items-start gap-3 animate-fadeIn" style={{ animationDelay: `${index * 100}ms` }}>
-                <div className="min-w-[24px] h-6 flex items-center justify-center rounded-full bg-[#F5A524]/10 text-[#F5A524] font-medium text-sm mt-0.5">
+                <div className="min-w-[24px] h-6 flex items-center justify-center rounded-full bg-[#1E3A8A]/10 text-[#1E3A8A] font-medium text-sm mt-0.5">
                   {index + 1}
                 </div>
                 <p className="text-foreground/90 leading-relaxed">{item}</p>
@@ -150,14 +150,14 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
               variant="outline"
               onClick={handlePrevious}
               disabled={isFirstStep}
-              className="hover:bg-[#F5A524]/10 hover:text-[#F5A524] hover:border-[#F5A524]/20"
+              className="hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A] hover:border-[#1E3A8A]/20"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Previous
             </Button>
             <Button 
               onClick={handleNext}
-              className="bg-[#F5A524] hover:bg-[#F5A524]/90 text-white"
+              className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] hover:from-[#1E3A8A]/90 hover:to-[#2563EB]/90 text-white"
             >
               {isLastStep ? 'Get Started' : 'Next'}
               {!isLastStep && <ArrowRight className="w-4 h-4 ml-2" />}

@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import { ChevronDown, GraduationCap, Activity, Users, Clock, Search, ChevronRight, CheckCircle2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
 interface Submission {
   timestamp: string | Date  // Allow both string and Date types
@@ -331,68 +332,57 @@ const SupervisorRow = ({ team }: { team: TeamMetrics }) => {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
       <div 
-        className="bg-white rounded-lg border border-gray-200 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+        className="p-4 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="grid grid-cols-12 gap-4 items-center">
-          <div className="col-span-4 flex items-center space-x-3">
-            <ChevronDown className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
-              isExpanded ? 'rotate-180' : ''
-            }`} />
-            <div>
-              <h3 className="font-medium text-gray-900">{team.supervisorName}</h3>
-              <p className="text-sm text-gray-500">{team.teamSize} members</p>
+        <div className="grid grid-cols-12 gap-4 items-start">
+          <div className="col-span-4">
+            <div className="flex items-center gap-3">
+              <ChevronDown 
+                className={cn(
+                  "h-4 w-4 text-gray-500 transition-transform mt-1",
+                  isExpanded && "transform rotate-180"
+                )} 
+              />
+              <div>
+                <div className="font-medium text-gray-900">{team.supervisorName}</div>
+                <div className="text-sm text-gray-500">{team.teamSize} members</div>
+              </div>
             </div>
           </div>
-          
+
           <div className="col-span-2">
-            <div className="flex items-center space-x-2 mb-1">
+            <div className="flex items-start gap-2">
               <StatusDot percentage={metrics.weekly.trainingPercentage} />
-              <CompactMetric completed={weeklyTotals.trainings} total={team.teamSize} />
-            </div>
-            <div className="flex items-center space-x-2 text-xs text-gray-500">
-              <span>4w:</span>
-              <CompactMetric completed={fourWeekTotals.trainings} total={team.teamSize * 4} />
+              <div>
+                <div className="font-medium text-gray-900">{weeklyTotals.trainings}/{team.teamSize}</div>
+                <div className="text-sm text-gray-500">4w: {fourWeekTotals.trainings}/{team.teamSize * 4}</div>
+              </div>
             </div>
           </div>
 
           <div className="col-span-2">
-            <div className="flex items-center space-x-2 mb-1">
+            <div className="flex items-start gap-2">
               <StatusDot percentage={metrics.weekly.boldActionPercentage} />
-              <CompactMetric completed={weeklyTotals.boldActions} total={team.teamSize} />
-            </div>
-            <div className="flex items-center space-x-2 text-xs text-gray-500">
-              <span>4w:</span>
-              <CompactMetric completed={fourWeekTotals.boldActions} total={team.teamSize * 4} />
+              <div>
+                <div className="font-medium text-gray-900">{weeklyTotals.boldActions}/{team.teamSize}</div>
+                <div className="text-sm text-gray-500">4w: {fourWeekTotals.boldActions}/{team.teamSize * 4}</div>
+              </div>
             </div>
           </div>
 
           <div className="col-span-2">
-            <div className="flex items-center space-x-2 mb-1">
+            <div className="flex items-start gap-2">
               <StatusDot percentage={metrics.weekly.standupPercentage} />
-              <CompactMetric completed={weeklyTotals.standups} total={team.teamSize} />
-            </div>
-            <div className="flex items-center space-x-2 text-xs text-gray-500">
-              <span>4w:</span>
-              <CompactMetric completed={fourWeekTotals.standups} total={team.teamSize * 4} />
+              <div>
+                <div className="font-medium text-gray-900">{weeklyTotals.standups}/{team.teamSize}</div>
+                <div className="text-sm text-gray-500">4w: {fourWeekTotals.standups}/{team.teamSize * 4}</div>
+              </div>
             </div>
           </div>
 
-          <div className="col-span-2 text-right">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-500 hover:text-gray-700"
-              onClick={(e) => {
-                e.stopPropagation()
-                // Add view details action
-              }}
-            >
-              View Details <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -402,50 +392,33 @@ const SupervisorRow = ({ team }: { team: TeamMetrics }) => {
 }
 
 export default function ExecutiveOverview({ teams }: ExecutiveOverviewProps) {
-  const [searchTerm, setSearchTerm] = useState('')
-  
-  const filteredTeams = teams.filter(team => 
-    team.supervisorName.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Team Performance</h1>
-          <p className="text-gray-500 mt-1">Weekly supervisor metrics</p>
-        </div>
-        <div className="w-64">
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
-            <Input
-              placeholder="Find supervisor..."
-              className="pl-9"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+    <Card className="bg-white rounded-none border-0 mb-8">
+      <CardHeader className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] px-8 py-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle className="text-xl sm:text-2xl font-semibold text-white">Team Performance</CardTitle>
+            <p className="text-white/80">Weekly supervisor metrics and team progress tracking</p>
           </div>
+          <Button
+            onClick={() => window.location.reload()}
+            variant="outline"
+            className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+          >
+            Refresh Data
+          </Button>
         </div>
-      </div>
-
-      <div className="bg-gray-50 rounded-lg p-3">
-        <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-500 mb-2 px-4">
-          <div className="col-span-4">Supervisor</div>
-          <div className="col-span-2">Trainings</div>
-          <div className="col-span-2">Bold Actions</div>
-          <div className="col-span-2">Stand-ups</div>
-          <div className="col-span-2"></div>
-        </div>
-        
-        <div className="space-y-2">
-          {filteredTeams.map((team) => (
-            <SupervisorRow 
-              key={team.supervisorName} 
-              team={team}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
+      </CardHeader>
+      <CardContent className="p-8">
+        <Input
+          type="text"
+          placeholder="Find supervisor..."
+          className="mb-4 bg-white text-[#333333] border-gray-200"
+        />
+        {teams.map((team, index) => (
+          <SupervisorRow key={index} team={team} />
+        ))}
+      </CardContent>
+    </Card>
   )
 } 

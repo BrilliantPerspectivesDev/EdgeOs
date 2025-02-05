@@ -678,38 +678,34 @@ export default function Dashboard() {
       {/* Rest of content with padding */}
       <div className="p-8">
         {/* Three Column Grid */}
-        <div className="grid grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* 5-Minute Stand ups Card */}
-          <Card className="bg-white text-[#333333] shadow-md flex flex-col">
-            <CardHeader className="p-4 sm:p-6 bg-gradient-to-r from-[#1E3A8A] to-[#2563EB]">
-              <CardTitle className="text-xl sm:text-2xl font-semibold text-white">5-Minute Stand ups</CardTitle>
-              <p className="text-white/80">
-                Quick check-ins with your team leader
-              </p>
+          <Card className="bg-white rounded-lg border-0 shadow-md">
+            <CardHeader className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] rounded-t-lg p-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-2xl font-semibold text-white">5-Minute Stand ups</CardTitle>
+                  <p className="text-white/80 mt-1">Quick check-ins with your team leader</p>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="flex-grow p-4 sm:p-6">
+            <CardContent className="p-6">
               <UpcomingStandups />
             </CardContent>
           </Card>
 
-          {/* Bold Actions Card with Year-to-Date Progress */}
-          <Card className="bg-white text-[#333333] shadow-md flex flex-col">
-            <CardHeader className="p-4 sm:p-6 bg-gradient-to-r from-[#3E5E17] to-[#527A1F]">
-              <CardTitle className="text-xl sm:text-2xl font-semibold text-white">Bold Actions</CardTitle>
-              {/* Year-to-Date Progress */}
-              <div className="mt-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-white/80">Year-to-Date Progress</span>
-                  <span className="font-medium text-white">{completedBoldActionsYTD} Completed</span>
+          {/* Bold Actions Card */}
+          <Card className="bg-white rounded-lg border-0 shadow-md">
+            <CardHeader className="bg-[#3E5E17] rounded-t-lg p-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-2xl font-semibold text-white">Bold Actions</CardTitle>
+                  <p className="text-white/80 mt-1">Year-to-Date Progress</p>
                 </div>
+                <div className="text-white">{completedBoldActionsYTD} Completed</div>
               </div>
             </CardHeader>
-            {boldActions.filter(action => action.status === 'active').length > 3 && (
-              <div className="px-4 sm:px-6 py-2 text-red-700">
-                You have more than three active bold actions, take a moment and review them.
-              </div>
-            )}
-            <CardContent className="flex-grow p-4 sm:p-6">
+            <CardContent className="p-6">
               <ScrollArea className="h-[300px]">
                 {isBoldActionsLoading ? (
                   <div className="flex justify-center items-center h-full">
@@ -771,11 +767,16 @@ export default function Dashboard() {
           </Card>
 
           {/* Leaderboard Card */}
-          <Card className="bg-white text-[#333333] shadow-md">
-            <CardHeader className="p-4 sm:p-6 bg-gradient-to-r from-[#74A78E] to-[#8BBBA5]">
-              <CardTitle className="text-xl sm:text-2xl font-semibold text-white">Leaderboard</CardTitle>
+          <Card className="bg-white rounded-lg border-0 shadow-md">
+            <CardHeader className="bg-[#4A7B86] rounded-t-lg p-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-2xl font-semibold text-white">Leaderboard</CardTitle>
+                  <p className="text-white/80 mt-1">Top performers this month</p>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6">
+            <CardContent className="p-6">
               <ScrollArea className="h-[300px]">
                 <div className="space-y-4">
                   {loading ? (

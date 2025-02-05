@@ -179,7 +179,7 @@ export default function BoldActions() {
   return (
     <div>
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-[#3E5E17] to-[#527A1F] py-8">
+      <div className="bg-gradient-to-r from-[#3E5E17] to-[#527A1F] py-8 mb-6">
         <div className="px-8">
           <h1 className="text-2xl font-semibold text-white">Bold Actions</h1>
           <div className="mt-4 space-y-2">

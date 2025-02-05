@@ -665,11 +665,6 @@ export default function ExecutiveDashboard() {
     }
   }, [userRole, router, fetchData]) // Add fetchData to dependencies
 
-  // Add a refresh handler
-  const handleRefresh = () => {
-    fetchData(true)
-  }
-
   const filteredUsers = users.filter(user => {
     const searchString = searchTerm.toLowerCase()
     return (
@@ -699,37 +694,28 @@ export default function ExecutiveDashboard() {
   }
 
   return (
-    <div className="space-y-8 pt-8">
-      <div className="flex justify-between items-center">
+    <div className="p-0">
+      <div>
         <ExecutiveOverview 
           weeklyTrainings={weeklyMetrics.trainings}
           weeklyBoldActions={weeklyMetrics.boldActions}
           weeklyStandups={weeklyMetrics.standups}
           teams={weeklyMetrics.teams}
         />
-        <Button
-          onClick={handleRefresh}
-          variant="outline"
-          className="ml-4"
-        >
-          Refresh Data
-        </Button>
       </div>
 
       <Card className="bg-white rounded-none border-0">
-        <CardHeader>
-          <CardTitle className="text-[#333333]">Company Overview</CardTitle>
-          <p className="text-[#666666] mt-1.5">
-            Monitor and manage company-wide progress and performance.
-          </p>
+        <CardHeader className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] px-8">
+          <CardTitle className="text-xl sm:text-2xl font-semibold text-white">Company Overview</CardTitle>
+          <p className="text-white/80">Monitor and manage company-wide progress and performance.</p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-8">
           <Input
             type="text"
             placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="mb-4 bg-white text-[#333333] border-gray-200"
+            className="mt-8 mb-4 bg-white text-[#333333] border-gray-200"
           />
           <ScrollArea className="h-[600px]">
             <Table>
@@ -750,8 +736,8 @@ export default function ExecutiveDashboard() {
                     <TableCell className="text-[#666666]">
                       {user.latestBoldAction ? (
                         <div>
-                          <div className="text-[#333333]">{user.latestBoldAction.action}</div>
-                          <div className="text-sm text-[#666666]">
+                          <div>{user.latestBoldAction.action}</div>
+                          <div className="text-sm text-gray-500">
                             Started: {formatDisplayDate(user.latestBoldAction.createdAt)}
                             <br />
                             Timeframe: {user.latestBoldAction.timeframe}
@@ -764,8 +750,8 @@ export default function ExecutiveDashboard() {
                     <TableCell className="text-[#666666]">
                       {user.latestTraining ? (
                         <div>
-                          <div className="text-[#333333]">{user.latestTraining.title}</div>
-                          <div className="text-sm text-[#666666]">
+                          <div>{user.latestTraining.title}</div>
+                          <div className="text-sm text-gray-500">
                             Completed: {formatDisplayDate(user.latestTraining.completedAt)}
                           </div>
                         </div>

@@ -125,25 +125,23 @@ export default function SupervisorDashboard() {
   }
 
   return (
-    <div className="pt-8">
+    <div className="p-0">
       {/* 5-Minute Stand ups Card */}
       <Card className="bg-white rounded-none border-0 mb-8">
-        <CardHeader className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB]">
+        <CardHeader className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] px-8">
           <CardTitle className="text-xl sm:text-2xl font-semibold text-white">5-Minute Stand ups</CardTitle>
           <p className="text-white/80">Quick check-ins with your team leader</p>
         </CardHeader>
-        <CardContent className="p-4 sm:p-6">
+        <CardContent className="p-8">
           <UpcomingStandups />
         </CardContent>
       </Card>
 
       {/* Team Overview Card */}
       <Card className="bg-white rounded-none border-0">
-        <CardHeader>
-          <CardTitle className="text-[#333333]">Team Overview</CardTitle>
-          <p className="text-[#666666] mt-1.5">
-            Monitor and manage your team's progress and performance.
-          </p>
+        <CardHeader className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] px-8">
+          <CardTitle className="text-xl sm:text-2xl font-semibold text-white">Team Overview</CardTitle>
+          <p className="text-white/80">Monitor and manage your team's progress and performance.</p>
         </CardHeader>
         <CardContent>
           <Input
@@ -151,7 +149,7 @@ export default function SupervisorDashboard() {
             placeholder="Search team members..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="mb-4 bg-white text-[#333333] border-gray-200"
+            className="mt-8 mb-4 bg-white text-[#333333] border-gray-200"
           />
           <ScrollArea className="h-[600px]">
             <Table>

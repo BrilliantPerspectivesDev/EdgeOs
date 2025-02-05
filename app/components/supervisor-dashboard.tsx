@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth-context'
 import { toast } from "@/components/ui/use-toast"
 import { db } from '@/lib/firebase'
 import { collection, query, where, getDocs, orderBy, limit, doc, getDoc, DocumentData } from 'firebase/firestore'
+import { UpcomingStandups } from '@/components/upcoming-standups'
 
 interface BoldAction {
   id: string
@@ -183,12 +184,25 @@ export default function SupervisorDashboard() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold mb-6">My Team</h1>
+    <div className="p-8">
+      <h1 className="text-3xl font-bold mb-6 text-[#333333]">My Team</h1>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Team Overview</CardTitle>
+      {/* 5-Minute Stand ups Card */}
+      <Card className="bg-white rounded-none border-0 mb-8 shadow-md">
+        <CardHeader className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] px-8">
+          <CardTitle className="text-xl sm:text-2xl font-semibold text-white">5-Minute Stand ups</CardTitle>
+          <p className="text-white/80">Quick check-ins with your team leader</p>
+        </CardHeader>
+        <CardContent className="p-8">
+          <UpcomingStandups />
+        </CardContent>
+      </Card>
+
+      {/* Team Overview Card */}
+      <Card className="bg-white rounded-none border-0 shadow-md">
+        <CardHeader className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] px-8">
+          <CardTitle className="text-xl sm:text-2xl font-semibold text-white">Team Overview</CardTitle>
+          <p className="text-white/80">Monitor and manage your team's progress and performance.</p>
         </CardHeader>
         <CardContent>
           <Input
@@ -196,16 +210,16 @@ export default function SupervisorDashboard() {
             placeholder="Search team members..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="mb-4"
+            className="mb-4 bg-white text-[#333333] border-gray-200"
           />
           <ScrollArea className="h-[600px]">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Current Bold Action</TableHead>
-                  <TableHead>Latest Training</TableHead>
-                  <TableHead>Actions</TableHead>
+                <TableRow className="border-gray-200">
+                  <TableHead className="text-[#333333]">Name</TableHead>
+                  <TableHead className="text-[#333333]">Current Bold Action</TableHead>
+                  <TableHead className="text-[#333333]">Latest Training</TableHead>
+                  <TableHead className="text-[#333333]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
