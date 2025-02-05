@@ -201,6 +201,11 @@ const MainSidebar = () => {
               onClick={() => setIsOnboardingOpen(true)}
             />
           )}
+          <NavItem 
+            href="https://brilliant-perspectives.notion.site/1842d04552eb804c80bfcb91e3c77be7?pvs=105"
+            icon={HelpCircle} 
+            label="Report a Bug" 
+          />
         </div>
       </div>
     );
