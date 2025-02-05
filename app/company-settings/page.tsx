@@ -44,8 +44,34 @@ function CompanySettings() {
   const [batchRole, setBatchRole] = useState('')
   const [batchSupervisor, setBatchSupervisor] = useState('')
   const [selectedRole, setSelectedRole] = useState<'team_member' | 'supervisor'>('team_member')
+  const [copiedTeam, setCopiedTeam] = useState(false)
+  const [copiedSupervisor, setCopiedSupervisor] = useState(false)
   const { user, companyName: authCompanyName } = useAuth()
   const router = useRouter()
+
+  const handleCopyLink = async (link: string, type: 'team' | 'supervisor') => {
+    try {
+      await navigator.clipboard.writeText(link)
+      if (type === 'team') {
+        setCopiedTeam(true)
+        setTimeout(() => setCopiedTeam(false), 2000)
+      } else {
+        setCopiedSupervisor(true)
+        setTimeout(() => setCopiedSupervisor(false), 2000)
+      }
+      toast({
+        title: "Link Copied",
+        description: "The invite link has been copied to your clipboard.",
+      })
+    } catch (error) {
+      console.error('Failed to copy link:', error)
+      toast({
+        title: "Error",
+        description: "Failed to copy link. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
   useEffect(() => {
     const fetchCompanyData = async () => {
@@ -319,11 +345,21 @@ function CompanySettings() {
                 className="bg-white text-[#333333] border-gray-200 flex-1"
               />
               <Button
-                onClick={() => handleCopyLink(teamMemberLink)}
+                onClick={() => handleCopyLink(teamMemberLink, 'team')}
                 variant="outline"
-                className="bg-white text-[#333333] border-gray-200 hover:bg-gray-50"
+                className="bg-white text-[#333333] border-gray-200 hover:bg-gray-50 w-[100px]"
               >
-                Copy
+                {copiedTeam ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -337,11 +373,21 @@ function CompanySettings() {
                 className="bg-white text-[#333333] border-gray-200 flex-1"
               />
               <Button
-                onClick={() => handleCopyLink(supervisorLink)}
+                onClick={() => handleCopyLink(supervisorLink, 'supervisor')}
                 variant="outline"
-                className="bg-white text-[#333333] border-gray-200 hover:bg-gray-50"
+                className="bg-white text-[#333333] border-gray-200 hover:bg-gray-50 w-[100px]"
               >
-                Copy
+                {copiedSupervisor ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy
+                  </>
+                )}
               </Button>
             </div>
           </div>
