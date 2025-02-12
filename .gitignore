@@ -40,3 +40,6 @@ EdgeOS_LMS_Technical_Documentation.txt service-account.json
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Firebase
+edge-6ac40-firebase-adminsdk-*.json
