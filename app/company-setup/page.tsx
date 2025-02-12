@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { doc, setDoc, getDoc } from 'firebase/firestore'
+import { doc, setDoc, getDoc, query, collection, where, getDocs } from 'firebase/firestore'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
 import { auth, db } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
@@ -35,6 +35,11 @@ const isValidCompanySize = (size: string) => {
   // Check if it's a valid number and within reasonable bounds
   return !isNaN(numSize) && numSize >= 1 && numSize <= 10000 && size.trim() === numSize.toString();
 };
+
+const generateCompanyCode = () => {
+  // Generate a random 5-digit number
+  return Math.floor(10000 + Math.random() * 90000).toString()
+}
 
 export default function CompanySetup() {
   const [step, setStep] = useState(1)
@@ -155,9 +160,26 @@ export default function CompanySetup() {
           });
         });
 
-        // Create the company document
+        // Generate a unique company code
+        let companyCode = generateCompanyCode()
+        let isCodeUnique = false
+        
+        while (!isCodeUnique) {
+          // Check if code already exists
+          const codeQuery = query(collection(db, 'companies'), where('code', '==', companyCode))
+          const codeSnapshot = await getDocs(codeQuery)
+          
+          if (codeSnapshot.empty) {
+            isCodeUnique = true
+          } else {
+            companyCode = generateCompanyCode()
+          }
+        }
+
+        // Create the company document with the unique code
         await setDoc(companyRef, {
           name: companyName,
+          code: companyCode,
           size: parseInt(companySize),
           createdAt: new Date().toISOString(),
           executiveUid: executiveUid,

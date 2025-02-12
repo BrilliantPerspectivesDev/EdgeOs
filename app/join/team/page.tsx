@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
-import { setDoc, doc, getDoc } from 'firebase/firestore'
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { toast } from "@/components/ui/use-toast"
 import { LoadingScreen } from '@/components/loading-screen'
+import { useToast } from '@/components/ui/use-toast'
+
+interface CompanyData {
+  name: string;
+  code: string;
+  supervisors?: string[];
+  teamMembers?: string[];
+}
 
 export default function TeamSignup() {
   const [email, setEmail] = useState('')
@@ -22,47 +30,54 @@ export default function TeamSignup() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [companyName, setCompanyName] = useState<string | null>(null)
+  const [companyData, setCompanyData] = useState<CompanyData | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { toast } = useToast()
+
+  const companyCode = searchParams.get('company')
+  const supervisorId = searchParams.get('supervisorId')
 
   useEffect(() => {
     const verifyCompany = async () => {
-      const company = searchParams.get('company')
-      if (!company) {
-        setError('Invalid signup link. Please contact your company administrator.')
+      if (!companyCode) {
+        console.log('No company code provided in URL')
+        setError('Invalid invite link')
         setLoading(false)
         return
       }
 
       try {
-        const decodedCompany = decodeURIComponent(company)
-        const companyRef = doc(db, 'companies', decodedCompany)
-        const companyDoc = await getDoc(companyRef)
+        // Query companies collection by code
+        const companiesRef = collection(db, 'companies')
+        const q = query(companiesRef, where('code', '==', companyCode))
+        const querySnapshot = await getDocs(q)
         
-        if (!companyDoc.exists()) {
-          setError('Company not found. Please contact your company administrator.')
-          setLoading(false)
-          return
+        console.log('Company query results:', querySnapshot.size)
+        if (!querySnapshot.empty) {
+          const companyDoc = querySnapshot.docs[0]
+          const data = companyDoc.data() as CompanyData
+          console.log('Company data:', data)
+          setCompanyData(data)
+        } else {
+          console.log('Company not found with code:', companyCode)
+          setError('Invalid company code')
         }
-
-        setCompanyName(decodedCompany)
-        setLoading(false)
       } catch (error) {
         console.error('Error verifying company:', error)
-        setError('Failed to verify company. Please try again.')
+        setError('Failed to verify company')
+      } finally {
         setLoading(false)
       }
     }
-
     verifyCompany()
-  }, [searchParams])
+  }, [companyCode])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     
-    if (isSubmitting || !companyName) return
+    if (isSubmitting || !companyData) return
     setIsSubmitting(true)
 
     try {
@@ -75,9 +90,9 @@ export default function TeamSignup() {
         lastName,
         email,
         role: 'team_member',
-        companyName,
-        supervisorId: '', // Empty until assigned by executive
-        permissions: ['team_member'], // Base permissions for team member
+        companyName: companyData.name,
+        supervisorId: supervisorId || '', // Use the supervisorId from the URL if available
+        permissions: ['team_member'],
         trainingProgress: {
           lastUpdated: new Date().toISOString(),
           completedVideos: 0,
@@ -88,6 +103,27 @@ export default function TeamSignup() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       })
+
+      // Update company's teamMembers array
+      if (companyData.teamMembers) {
+        const companyRef = doc(db, 'companies', companyData.name)
+        await setDoc(companyRef, {
+          teamMembers: [...companyData.teamMembers, userCredential.user.uid]
+        }, { merge: true })
+      }
+
+      // If there's a supervisorId, update the supervisor's teamMembers array
+      if (supervisorId) {
+        const supervisorRef = doc(db, 'users', supervisorId)
+        const supervisorDoc = await getDoc(supervisorRef)
+        if (supervisorDoc.exists()) {
+          const supervisorData = supervisorDoc.data()
+          const teamMembers = supervisorData.teamMembers || []
+          await setDoc(supervisorRef, {
+            teamMembers: [...teamMembers, userCredential.user.uid]
+          }, { merge: true })
+        }
+      }
 
       toast({
         title: "Account Created",
@@ -121,14 +157,14 @@ export default function TeamSignup() {
     return <LoadingScreen />
   }
 
-  if (!companyName) {
+  if (!companyData) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Card className="w-[400px]">
           <CardHeader>
-            <CardTitle>Invalid Signup Link</CardTitle>
+            <CardTitle>Invalid Invite Link</CardTitle>
             <CardDescription>
-              This signup link is invalid or has expired. Please contact your company administrator for a new link.
+              This invite link is invalid or has expired. Please contact your company administrator for a valid link.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -147,7 +183,7 @@ export default function TeamSignup() {
         <Card className="bg-card border-none shadow-2xl">
           <CardHeader className="space-y-2 pt-6 pb-4">
             <h1 className="text-[28px] font-semibold text-white tracking-tight text-center">LeaderForge</h1>
-            <CardTitle className="text-white text-xl">Join {companyName}</CardTitle>
+            <CardTitle className="text-white text-xl">Join {companyData.name}</CardTitle>
             <CardDescription className="text-white/70">
               Create your team member account to get started with LeaderForge.
             </CardDescription>

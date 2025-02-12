@@ -14,8 +14,10 @@ service cloud.firestore {
 
     // Helper function to check if the user is a supervisor
     function isSupervisor() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'supervisor';
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'supervisor' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'executive'
+      );
     }
 
     // Helper function to check if the user belongs to the company
@@ -31,24 +33,22 @@ service cloud.firestore {
              'companyName' in request.query.where;
     }
 
-    // Companies collection rules
-    match /companies/{companyName} {
-      // Allow reading basic company info for signup verification
-      allow get: if true;
+    // Companies collection rules - simplified
+    match /companies/{companyId} {
+      // Allow reading company data without restrictions
+      allow read: if true;
       
-      // Allow reading full company data if user belongs to the company
-      allow list: if belongsToCompany(companyName);
-      
-      // Allow executives to update their company and new supervisors to be added
-      allow update: if 
-        // Allow executives to update their company
-        (isExecutive() && belongsToCompany(companyName)) || 
-        // Allow new supervisors to be added during signup
-        (request.auth != null && 
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['supervisors', 'updatedAt']));
-      
-      // Allow creating new companies (for company setup)
-      allow create: if true;
+      // Company modifications still require proper authentication
+      allow create: if isAuthenticated() && isExecutive();
+      allow update: if isAuthenticated() && (
+        // Executives can update everything
+        (isExecutive() && belongsToCompany(companyId)) ||
+        // Supervisors can only update specific fields
+        (isSupervisor() && 
+         request.resource.data.diff(resource.data).affectedKeys()
+         .hasOnly(['teamMembers', 'supervisors', 'updatedAt']))
+      );
+      allow delete: if isAuthenticated() && isExecutive();
     }
     
     // Users collection rules
