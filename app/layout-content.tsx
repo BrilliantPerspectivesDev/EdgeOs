@@ -9,21 +9,23 @@ import { Toaster } from '@/components/ui/toaster'
 export function LayoutContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
   const pathname = usePathname()
-  const isAuthPage = pathname === '/signin' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/company-setup'
+  const isPublicPage = pathname === '/signin' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/company-setup' || pathname === '/landing'
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>
-  }
-
-  if (isAuthPage) {
+  // Public pages render immediately without waiting for auth
+  if (isPublicPage) {
     return (
       <>
-        <div className="min-h-screen w-full bg-[#1E1E1E]">
+        <div className="min-h-screen w-full">
           {children}
         </div>
         <Toaster />
       </>
     )
+  }
+
+  // Only show loading for authenticated pages
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>
   }
 
   return (

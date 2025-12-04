@@ -25,6 +25,13 @@ const AuthContext = createContext<AuthContextType>({
   permissions: []
 })
 
+// Helper to check if a path is a public page that doesn't require auth
+const isPublicPath = (path: string | null): boolean => {
+  if (!path) return false
+  const publicPaths = ['/signin', '/company-setup', '/join/team', '/join/supervisor', '/forgot-password', '/landing', '/register']
+  return publicPaths.some(p => path === p || path.startsWith(p + '/') || path.startsWith(p + '?'))
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -36,8 +43,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [permissions, setPermissions] = useState<string[]>([])
   const [initialized, setInitialized] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
+  
+  // Check if public page
+  const isCurrentPathPublic = isPublicPath(pathname)
+  
+  console.log('[AuthProvider] pathname:', pathname, 'isPublic:', isCurrentPathPublic)
 
   useEffect(() => {
+    // For public pages, just set loading to false and skip all auth
+    if (isCurrentPathPublic) {
+      console.log('[AuthProvider] Public page detected, skipping auth')
+      setLoading(false)
+      return
+    }
+
     let unsubscribe: () => void = () => {}
 
     const initializeAuth = async () => {
@@ -67,12 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         setUser(user)
         
-        // Updated auth pages check
-        const isAuthPage = pathname === '/signin' || 
-                          pathname === '/company-setup' ||
-                          pathname === '/join/team' ||
-                          pathname === '/join/supervisor' ||
-                          pathname === '/forgot-password'
+        // Updated auth pages check - includes public pages that don't require auth
+        const isAuthPage = isPublicPath(pathname)
 
         if (!user) {
           setUserRole(null)
@@ -151,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth()
 
     return () => unsubscribe()
-  }, [router, pathname, initialized, retryCount])
+  }, [router, pathname, initialized, retryCount, isCurrentPathPublic])
 
   return (
     <AuthContext.Provider value={{ 

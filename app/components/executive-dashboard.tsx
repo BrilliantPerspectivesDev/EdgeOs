@@ -53,7 +53,8 @@ interface TeamMember {
   lastName: string
   role: string
   supervisorId: string
-  weeklyProgress?: WeeklyData
+  weeklyProgress: WeeklyData
+  allWeeklyData: WeeklyData[]
   fourWeekProgress?: any // TODO: Define specific type if needed
 }
 
@@ -141,199 +142,167 @@ export default function ExecutiveDashboard() {
 
   const fetchUserWeeklyData = async (userId: string, supervisorId: string): Promise<WeeklyData[]> => {
     const now = new Date()
-    const startOfThisWeek = startOfWeek(now, { weekStartsOn: 0 }) // Ensure week starts on Sunday
-    console.log('Date calculations:', {
-      now: now.toISOString(),
-      startOfThisWeek: startOfThisWeek.toISOString(),
-      nowTime: now.getTime(),
-      startOfThisWeekTime: startOfThisWeek.getTime()
-    })
-    
     const weeklyData: WeeklyData[] = []
-
-    try {
-      // Fetch trainings completed this week
-      const progressRef = doc(db, `users/${userId}/progress/trainings`)
-      const progressDoc = await getDoc(progressRef)
-      const progressData = progressDoc.exists() ? progressDoc.data() : {}
+    
+    // Get data for the last 4 weeks
+    for (let i = 0; i < 4; i++) {
+      const weekStart = startOfWeek(new Date(now))
+      weekStart.setDate(weekStart.getDate() - (i * 7)) // Go back i weeks
+      weekStart.setHours(0, 0, 0, 0) // Start of day
       
-      console.log('Training progress data:', {
+      const weekEnd = new Date(weekStart)
+      weekEnd.setDate(weekStart.getDate() + 6) // End of the week
+      weekEnd.setHours(23, 59, 59, 999) // End of day
+
+      console.log(`Fetching data for week ${i}:`, {
+        weekStart: weekStart.toISOString(),
+        weekEnd: weekEnd.toISOString(),
         userId,
-        progressData,
-        startOfThisWeek: startOfThisWeek.toISOString()
+        supervisorId
       })
       
-      const trainings = Object.entries(progressData)
-        .filter(([trainingId, data]: [string, any]) => {
-          if (!data.lastUpdated) {
-            console.log(`No lastUpdated timestamp for training ${trainingId}`)
-            return false;
-          }
-          
-          // Convert the timestamp to a Date object
-          let updateDate: Date;
-          try {
+      try {
+        // Fetch trainings completed this week
+        const progressRef = doc(db, `users/${userId}/progress/trainings`)
+        const progressDoc = await getDoc(progressRef)
+        const progressData = progressDoc.exists() ? progressDoc.data() : {}
+        
+        const trainings = Object.entries(progressData)
+          .filter(([trainingId, data]: [string, any]) => {
+            if (!data.lastUpdated) return false;
+            
+            let updateDate: Date;
+            try {
+              if (data.lastUpdated.toDate) {
+                updateDate = data.lastUpdated.toDate();
+              } else if (data.lastUpdated.seconds) {
+                updateDate = new Date(data.lastUpdated.seconds * 1000);
+              } else {
+                updateDate = new Date(data.lastUpdated);
+              }
+              
+              const updateTime = updateDate.getTime();
+              const weekStartTime = weekStart.getTime();
+              const weekEndTime = weekEnd.getTime();
+              const isThisWeek = updateTime >= weekStartTime && updateTime <= weekEndTime;
+              const isCompleted = data.videoCompleted === true && data.worksheetCompleted === true;
+              
+              console.log(`Training ${trainingId} check:`, {
+                updateTime,
+                weekStartTime,
+                weekEndTime,
+                isThisWeek,
+                isCompleted
+              });
+
+              return isThisWeek && isCompleted;
+            } catch (error) {
+              console.error('Error processing training date:', error)
+              return false;
+            }
+          })
+          .map(([trainingId, data]: [string, any]) => {
+            let timestamp: Date;
             if (data.lastUpdated.toDate) {
-              updateDate = data.lastUpdated.toDate();
+              timestamp = data.lastUpdated.toDate();
             } else if (data.lastUpdated.seconds) {
-              updateDate = new Date(data.lastUpdated.seconds * 1000);
+              timestamp = new Date(data.lastUpdated.seconds * 1000);
             } else {
-              updateDate = new Date(data.lastUpdated);
+              timestamp = new Date(data.lastUpdated);
             }
             
-            const updateTime = updateDate.getTime();
-            const weekStartTime = startOfThisWeek.getTime();
-            const isThisWeek = updateTime >= weekStartTime;
-            const isCompleted = data.videoCompleted === true && data.worksheetCompleted === true;
-            
-            console.log('Training completion check:', {
-              trainingId,
-              updateDate: updateDate.toISOString(),
-              updateTime,
-              weekStartTime,
-              isThisWeek,
-              isCompleted,
-              videoCompleted: data.videoCompleted,
-              worksheetCompleted: data.worksheetCompleted,
-              timeDiff: updateTime - weekStartTime
-            })
-            
-            return isThisWeek && isCompleted;
-          } catch (error) {
-            console.error('Error processing training date:', error)
-            return false;
-          }
-        })
-        .map(([id, data]: [string, any]) => {
-          let timestamp: Date;
-          if (data.lastUpdated.toDate) {
-            timestamp = data.lastUpdated.toDate();
-          } else if (data.lastUpdated.seconds) {
-            timestamp = new Date(data.lastUpdated.seconds * 1000);
-          } else {
-            timestamp = new Date(data.lastUpdated);
-          }
-          
+            return {
+              completed: true,
+              timestamp
+            };
+          });
+
+        console.log(`Found ${trainings.length} completed trainings for week ${i}`);
+
+        // Fetch bold actions for this week
+        const boldActionsRef = collection(db, `users/${userId}/boldActions`)
+        const completedBoldActionsQuery = query(
+          boldActionsRef,
+          where('status', '==', 'completed'),
+          where('completedAt', '>=', weekStart),
+          where('completedAt', '<=', weekEnd),
+          orderBy('completedAt', 'desc')
+        )
+        const completedBoldActionsSnapshot = await getDocs(completedBoldActionsQuery)
+        
+        // Map completed bold actions
+        const boldActions = completedBoldActionsSnapshot.docs.map(doc => {
+          const data = doc.data()
+          const timestamp = data.completedAt?.toDate?.() || new Date(data.completedAt)
+          console.log(`Bold action completed at ${timestamp} for week ${i}:`, {
+            weekStart: weekStart.toISOString(),
+            weekEnd: weekEnd.toISOString(),
+            isWithinWeek: timestamp >= weekStart && timestamp <= weekEnd
+          })
           return {
             completed: true,
             timestamp
-          };
-        });
-      
-      console.log('Filtered trainings:', {
-        userId,
-        trainingsCount: trainings.length,
-        trainings
-      });
-
-      // Fetch bold actions - both created and completed this week
-      const boldActionsRef = collection(db, `users/${userId}/boldActions`)
-      
-      // Get bold actions completed this week
-      const completedBoldActionsQuery = query(
-        boldActionsRef,
-        where('completedAt', '>=', startOfThisWeek),
-        where('status', '==', 'completed'),
-        orderBy('completedAt', 'desc')
-      )
-      const completedBoldActionsSnapshot = await getDocs(completedBoldActionsQuery)
-      
-      // Get bold actions created this week that are still active
-      const activeBoldActionsQuery = query(
-        boldActionsRef,
-        where('createdAt', '>=', startOfThisWeek),
-        where('status', '==', 'active'),
-        orderBy('createdAt', 'desc')
-      )
-      const activeBoldActionsSnapshot = await getDocs(activeBoldActionsQuery)
-
-      // Combine bold actions, prioritizing completed ones
-      const allBoldActions = new Map()
-      
-      // Add completed bold actions
-      completedBoldActionsSnapshot.docs.forEach(doc => {
-        const data = doc.data()
-        allBoldActions.set(doc.id, {
-          completed: true,
-          timestamp: data.completedAt
+          }
         })
-      })
-      
-      // Add active bold actions if not already included
-      activeBoldActionsSnapshot.docs.forEach(doc => {
-        if (!allBoldActions.has(doc.id)) {
+
+        console.log(`Found ${boldActions.length} completed bold actions for week ${i}`);
+
+        // Fetch standups for this week
+        const standupsRef = collection(db, `users/${userId}/standups`)
+        const completedStandupsQuery = query(
+          standupsRef,
+          where('completedAt', '>=', weekStart),
+          where('completedAt', '<=', weekEnd),
+          where('status', '==', 'completed'),
+          where('supervisorId', '==', supervisorId),
+          orderBy('completedAt', 'desc')
+        )
+        const completedStandupsSnapshot = await getDocs(completedStandupsQuery)
+
+        const standups = completedStandupsSnapshot.docs.map(doc => {
           const data = doc.data()
-          allBoldActions.set(doc.id, {
-            completed: false,
-            timestamp: data.createdAt
-          })
-        }
-      })
-      
-      // Fetch standups - include both scheduled and completed standups for this week
-      const standupsRef = collection(db, `users/${userId}/standups`)
-      const standupsQuery = query(
-        standupsRef,
-        where('scheduledFor', '>=', startOfThisWeek),
-        where('supervisorId', '==', supervisorId),
-        orderBy('scheduledFor', 'desc')
-      )
-      const standupsSnapshot = await getDocs(standupsQuery)
-
-      // Also fetch standups that were completed this week but might have been scheduled earlier
-      const completedStandupsQuery = query(
-        standupsRef,
-        where('completedAt', '>=', startOfThisWeek),
-        where('status', '==', 'completed'),
-        where('supervisorId', '==', supervisorId),
-        orderBy('completedAt', 'desc')
-      )
-      const completedStandupsSnapshot = await getDocs(completedStandupsQuery)
-
-      // Combine and deduplicate standups
-      const allStandups = new Map()
-      
-      // Add scheduled standups
-      standupsSnapshot.docs.forEach(doc => {
-        const data = doc.data()
-        // Only include standups for this supervisor
-        if (data.supervisorId === supervisorId) {
-          allStandups.set(doc.id, {
-            completed: data.status === 'completed',
-            timestamp: data.completedAt || data.scheduledFor,
-            scheduledFor: data.scheduledFor
-          })
-        }
-      })
-
-      // Add completed standups
-      completedStandupsSnapshot.docs.forEach(doc => {
-        const data = doc.data()
-        // Only include standups for this supervisor
-        if (data.supervisorId === supervisorId && !allStandups.has(doc.id)) {
-          allStandups.set(doc.id, {
+          const timestamp = data.completedAt?.toDate?.() || new Date(data.completedAt)
+          return {
             completed: true,
-            timestamp: data.completedAt,
-            scheduledFor: data.scheduledFor
-          })
-        }
-      })
+            timestamp
+          }
+        })
 
-      weeklyData.push({
-        trainings,
-        boldActions: Array.from(allBoldActions.values()),
-        standups: Array.from(allStandups.values()).map(standup => ({
-          completed: standup.completed,
-          timestamp: standup.timestamp
-        })),
-        weekStartDate: startOfThisWeek
-      })
+        console.log(`Found ${standups.length} completed standups for week ${i}`);
 
-      return weeklyData
-    } catch (error) {
-      console.error(`Error fetching weekly data for user ${userId}:`, error)
-      return []
+        // Always push data for the week, even if empty
+        weeklyData.push({
+          trainings,
+          boldActions,
+          standups,
+          weekStartDate: weekStart
+        })
+
+        console.log(`Week ${i} data summary:`, {
+          weekStart: weekStart.toISOString(),
+          trainingsCount: trainings.length,
+          boldActionsCount: boldActions.length,
+          standupsCount: standups.length
+        });
+
+      } catch (error) {
+        console.error(`Error fetching data for week ${i} for user ${userId}:`, error)
+        // Still push an empty week data to maintain the array structure
+        weeklyData.push({
+          trainings: [],
+          boldActions: [],
+          standups: [],
+          weekStartDate: weekStart
+        })
+      }
     }
+
+    // Sort weeks from newest to oldest
+    const sortedData = weeklyData.sort((a, b) => b.weekStartDate.getTime() - a.weekStartDate.getTime());
+    
+    console.log('Final weekly data:', sortedData);
+    
+    return sortedData;
   }
 
   const fetchUserFourWeekProgress = async (userId: string): Promise<{
@@ -406,6 +375,8 @@ export default function ExecutiveDashboard() {
         where('role', '==', 'supervisor')
       )
       const supervisorsSnapshot = await getDocs(supervisorsQuery)
+      
+      console.log(`Found ${supervisorsSnapshot.size} supervisors`);
       setLoadingProgress(30)
 
       let completedTrainings = 0
@@ -421,6 +392,8 @@ export default function ExecutiveDashboard() {
 
       for (const supervisor of supervisorsSnapshot.docs) {
         const supervisorData = supervisor.data()
+        console.log(`Processing supervisor: ${supervisorData.firstName} ${supervisorData.lastName}`);
+        
         let teamSize = 0
         const teamMembers = []
 
@@ -433,33 +406,15 @@ export default function ExecutiveDashboard() {
         )
         const teamMembersSnapshot = await getDocs(teamMembersQuery)
         teamSize = teamMembersSnapshot.size
+        
+        console.log(`Found ${teamSize} team members for supervisor ${supervisorData.firstName} ${supervisorData.lastName}`);
 
         for (const memberDoc of teamMembersSnapshot.docs) {
           const memberData = memberDoc.data()
+          console.log(`Processing team member: ${memberData.firstName} ${memberData.lastName}`);
+          
           const weeklyData = await fetchUserWeeklyData(memberDoc.id, supervisor.id)
           const fourWeekProgress = await fetchUserFourWeekProgress(memberDoc.id)
-
-          // Update totals
-          if (weeklyData[0]) {
-            const newCompletedTrainings = weeklyData[0].trainings.filter(t => t.completed).length;
-            completedTrainings += newCompletedTrainings;
-            totalTrainings += 1; // Each team member should complete one training per week
-            
-            console.log('Weekly metrics update:', {
-              userId: memberDoc.id,
-              memberName: `${memberData.firstName} ${memberData.lastName}`,
-              weeklyData: weeklyData[0],
-              trainingsThisWeek: weeklyData[0].trainings,
-              newCompletedTrainings,
-              runningTotalCompleted: completedTrainings,
-              runningTotalExpected: totalTrainings
-            });
-
-            completedBoldActions += weeklyData[0].boldActions.filter(ba => ba.completed).length;
-            totalBoldActions += 1;
-            completedStandups += weeklyData[0].standups.filter(s => s.completed).length;
-            totalStandups += weeklyData[0].standups.length;
-          }
 
           teamMembers.push({
             id: memberDoc.id,
@@ -467,7 +422,13 @@ export default function ExecutiveDashboard() {
             lastName: memberData.lastName || '',
             role: memberData.role || 'team_member',
             supervisorId: memberData.supervisorId || '',
-            weeklyProgress: weeklyData[0], // Current week's data
+            weeklyProgress: weeklyData[0] || {
+              trainings: [],
+              boldActions: [],
+              standups: [],
+              weekStartDate: new Date()
+            },
+            allWeeklyData: weeklyData,
             fourWeekProgress
           })
         }
@@ -479,12 +440,10 @@ export default function ExecutiveDashboard() {
         })
 
         processedSupervisors++
-        // Calculate progress based on supervisor processing (from 30% to 90%)
         const supervisorProgress = (processedSupervisors / totalSupervisors) * 60
         setLoadingProgress(30 + supervisorProgress)
       }
 
-      // Create metrics object
       const newMetrics = {
         trainings: { completed: completedTrainings, total: totalTrainings },
         boldActions: { completed: completedBoldActions, total: totalBoldActions },
@@ -492,7 +451,7 @@ export default function ExecutiveDashboard() {
         teams: teamsMetrics
       };
 
-      // Update state
+      console.log('Final metrics:', newMetrics);
       setWeeklyMetrics(newMetrics);
       
       setLoadingProgress(100)

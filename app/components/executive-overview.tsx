@@ -8,9 +8,11 @@ import { motion } from "framer-motion"
 import { ChevronDown, GraduationCap, Activity, Users, Clock, Search, ChevronRight, CheckCircle2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { format } from 'date-fns'
+import { startOfWeek, endOfWeek, subWeeks, isWithinInterval } from 'date-fns'
 
 interface Submission {
-  timestamp: string | Date  // Allow both string and Date types
+  timestamp: string | Date
   completed: boolean
 }
 
@@ -18,6 +20,7 @@ interface WeeklyProgress {
   trainings: Submission[]
   boldActions: Submission[]
   standups: Submission[]
+  weekStartDate: Date
 }
 
 interface WeeklyData {
@@ -28,10 +31,14 @@ interface WeeklyData {
 }
 
 interface FourWeekProgress {
-  weeklyData: WeeklyData[]
-  totalTrainings: number
-  totalBoldActions: number
-  totalStandups: number
+  weeklyData?: {
+    trainings: { completed: boolean; timestamp: Date }[];
+    boldActions: { completed: boolean; timestamp: Date }[];
+    standups: { completed: boolean; timestamp: Date }[];
+  }[];
+  totalTrainings: number;
+  totalBoldActions: number;
+  totalStandups: number;
 }
 
 interface TeamMember {
@@ -39,6 +46,7 @@ interface TeamMember {
   firstName: string
   lastName: string
   weeklyProgress: WeeklyProgress
+  allWeeklyData: WeeklyData[]
   fourWeekProgress?: FourWeekProgress
 }
 
@@ -49,6 +57,9 @@ interface TeamMetrics {
 }
 
 interface ExecutiveOverviewProps {
+  weeklyTrainings: { completed: number; total: number }
+  weeklyBoldActions: { completed: number; total: number }
+  weeklyStandups: { completed: number; total: number }
   teams: TeamMetrics[]
 }
 
@@ -76,130 +87,224 @@ const CompactMetric = ({ completed, total }: { completed: number; total: number 
   )
 }
 
-// Helper functions to check if activities are completed this week
-const isThisWeek = (timestamp: any): boolean => {
-  if (!timestamp) return false;
-  
-  let date: Date;
-  // Handle Firestore Timestamp
-  if (timestamp.toDate && typeof timestamp.toDate === 'function') {
-    date = timestamp.toDate();
-  }
-  // Handle Date object
-  else if (timestamp instanceof Date) {
-    date = timestamp;
-  }
-  // Handle string
-  else if (typeof timestamp === 'string') {
-    date = new Date(timestamp);
-  }
-  // Handle seconds timestamp
-  else if (timestamp.seconds) {
-    date = new Date(timestamp.seconds * 1000);
-  }
-  else {
-    return false;
-  }
+const wasCompletedInWeek = (activities: any[] | undefined, weekIndex: number): boolean => {
+  if (!activities || activities.length === 0) return false;
 
   const now = new Date();
-  const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(endOfWeek.getDate() + 6);
-  
-  return date >= startOfWeek && date <= endOfWeek;
-}
+  const weekStart = startOfWeek(subWeeks(now, weekIndex));
+  const weekEnd = endOfWeek(subWeeks(now, weekIndex));
 
-const hasCompletedThisWeek = (submissions: Submission[] = []): boolean => {
-  if (!Array.isArray(submissions)) return false;
-  return submissions.some(s => s.completed && isThisWeek(s.timestamp));
+  // Set precise start and end times for the week
+  weekStart.setHours(0, 0, 0, 0);
+  weekEnd.setHours(23, 59, 59, 999);
+
+  return activities.some(activity => {
+    try {
+      // Get the timestamp, handling different possible formats
+      let timestamp: Date;
+      if (activity.timestamp instanceof Date) {
+        timestamp = activity.timestamp;
+      } else if (activity.timestamp?.toDate) {
+        timestamp = activity.timestamp.toDate();
+      } else if (activity.timestamp) {
+        timestamp = new Date(activity.timestamp);
+      } else if (activity.completedAt?.toDate) {
+        timestamp = activity.completedAt.toDate();
+      } else if (activity.completedAt) {
+        timestamp = new Date(activity.completedAt);
+      } else if (activity.scheduledFor?.toDate) {
+        timestamp = activity.scheduledFor.toDate();
+      } else if (activity.scheduledFor) {
+        timestamp = new Date(activity.scheduledFor);
+      } else {
+        return false;
+      }
+
+      // Check if the activity is completed and falls within the week
+      const isCompleted = activity.completed === true || 
+                         activity.status === 'completed' ||
+                         (activity.videoCompleted === true && activity.worksheetCompleted === true);
+
+      return isCompleted && isWithinInterval(timestamp, { start: weekStart, end: weekEnd });
+    } catch (error) {
+      console.error('Error processing activity date:', error);
+      return false;
+    }
+  });
+};
+
+// Helper function to get the date range for a week
+const getWeekRange = (weekIndex: number): { start: Date; end: Date } => {
+  const now = new Date();
+  const weekStart = startOfWeek(subWeeks(now, weekIndex));
+  const weekEnd = endOfWeek(subWeeks(now, weekIndex));
+  
+  // Set times to start and end of day for precise comparison
+  weekStart.setHours(0, 0, 0, 0);
+  weekEnd.setHours(23, 59, 59, 999);
+  
+  return { start: weekStart, end: weekEnd };
 }
 
 const DetailedMetrics = ({ team }: { team: TeamMetrics }) => {
-  // Calculate totals for the footer
-  const totalTrainings = team.members.reduce((total, member) => 
-    total + (hasCompletedThisWeek(member.weeklyProgress?.trainings) ? 1 : 0), 0)
-  
-  const totalBoldActions = team.members.reduce((total, member) => 
-    total + (hasCompletedThisWeek(member.weeklyProgress?.boldActions) ? 1 : 0), 0)
-  
-  const totalStandups = team.members.reduce((total, member) => 
-    total + (hasCompletedThisWeek(member.weeklyProgress?.standups) ? 1 : 0), 0)
-  
+  const [currentWeekIndex, setCurrentWeekIndex] = useState(0)
+
+  // Get weekly data from all team members
+  const hasWeeklyData = team.members.some(member => 
+    member.allWeeklyData?.[currentWeekIndex] !== undefined
+  )
+
+  console.log('DetailedMetrics data check:', {
+    teamName: team.supervisorName,
+    currentWeekIndex,
+    membersCount: team.members.length,
+    hasWeeklyData,
+    membersWithData: team.members.map(member => ({
+      name: `${member.firstName} ${member.lastName}`,
+      hasData: member.allWeeklyData?.[currentWeekIndex] ? {
+        trainings: member.allWeeklyData[currentWeekIndex].trainings.length,
+        boldActions: member.allWeeklyData[currentWeekIndex].boldActions.length,
+        standups: member.allWeeklyData[currentWeekIndex].standups.length
+      } : null
+    }))
+  });
+
+  // Get the first member that has data for date display
+  const memberWithData = team.members.find(member => 
+    member.allWeeklyData?.[currentWeekIndex] !== undefined
+  )
+
+  // If we don't have any data at all, show a message
+  if (!hasWeeklyData || !memberWithData?.allWeeklyData?.[currentWeekIndex]) {
+    return (
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mt-2 text-center text-gray-500">
+        No data available for this week
+      </div>
+    )
+  }
+
+  const handlePreviousWeek = () => {
+    const newIndex = Math.min(3, currentWeekIndex + 1)
+    console.log('Moving to previous week:', { currentIndex: currentWeekIndex, newIndex })
+    setCurrentWeekIndex(newIndex)
+  }
+
+  const handleNextWeek = () => {
+    const newIndex = Math.max(0, currentWeekIndex - 1)
+    console.log('Moving to next week:', { currentIndex: currentWeekIndex, newIndex })
+    setCurrentWeekIndex(newIndex)
+  }
+
+  // Get the date range for the current week
+  const weekStartDate = memberWithData.allWeeklyData[currentWeekIndex].weekStartDate
+  const weekStart = format(weekStartDate, 'MMM d')
+  const weekEnd = format(new Date(weekStartDate.getTime() + 6 * 24 * 60 * 60 * 1000), 'MMM d')
+
   return (
     <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mt-2">
+      {/* Week Navigation */}
+      <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+        <Button
+          onClick={handlePreviousWeek}
+          disabled={currentWeekIndex === 3}
+          variant="ghost"
+          size="sm"
+          className="text-gray-500 hover:text-gray-700"
+        >
+          Previous Week
+        </Button>
+        <div className="text-sm font-medium text-gray-700">
+          {weekStart} - {weekEnd}
+        </div>
+        <Button
+          onClick={handleNextWeek}
+          disabled={currentWeekIndex === 0}
+          variant="ghost"
+          size="sm"
+          className="text-gray-500 hover:text-gray-700"
+        >
+          Next Week
+        </Button>
+      </div>
+
+      {/* Weekly Data Table */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full">
           <thead>
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <tr className="border-b border-gray-200">
+              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 w-1/4">
                 Team Member
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 w-1/4">
                 Training
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 w-1/4">
                 Bold Action
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Stand-up
+              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 w-1/4">
+                Standup
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {team.members.map((member) => (
-              <tr key={member.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {member.firstName} {member.lastName}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex items-center">
-                    <CheckCircle2 
-                      className={`w-5 h-5 ${
-                        hasCompletedThisWeek(member.weeklyProgress?.trainings)
-                          ? 'text-green-500' 
-                          : 'text-gray-300'
-                      }`}
-                    />
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex items-center">
-                    <CheckCircle2 
-                      className={`w-5 h-5 ${
-                          hasCompletedThisWeek(member.weeklyProgress?.boldActions)
-                          ? 'text-green-500' 
-                          : 'text-gray-300'
-                      }`}
-                    />
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex items-center">
-                    <CheckCircle2 
-                      className={`w-5 h-5 ${
-                          hasCompletedThisWeek(member.weeklyProgress?.standups)
-                          ? 'text-green-500' 
-                          : 'text-gray-300'
-                      }`}
-                    />
-                  </div>
-                </td>
-              </tr>
-            ))}
+          <tbody>
+            {team.members.map((member) => {
+              const weekData = member.allWeeklyData?.[currentWeekIndex];
+              const isTrainingCompleted = weekData?.trainings.some(t => t.completed) || false;
+              const isBoldActionCompleted = weekData?.boldActions.some(b => b.completed) || false;
+              const isStandupCompleted = weekData?.standups.some(s => s.completed) || false;
+
+              console.log(`Member completion status for week ${currentWeekIndex}:`, {
+                name: `${member.firstName} ${member.lastName}`,
+                weekData: weekData ? {
+                  trainings: weekData.trainings.length,
+                  boldActions: weekData.boldActions.length,
+                  standups: weekData.standups.length
+                } : null,
+                isTrainingCompleted,
+                isBoldActionCompleted,
+                isStandupCompleted
+              });
+
+              return (
+                <tr key={member.id} className="border-b border-gray-100">
+                  <td className="py-3 text-sm font-medium text-gray-900">
+                    {member.firstName} {member.lastName}
+                  </td>
+                  <td className="py-3 text-sm text-gray-500">
+                    <div className="flex items-center">
+                      <div className={`w-2 h-2 rounded-full ${isTrainingCompleted ? 'bg-green-500' : 'bg-gray-300'}`} />
+                      <span className="ml-2">{isTrainingCompleted ? 'Completed' : 'Not Completed'}</span>
+                    </div>
+                  </td>
+                  <td className="py-3 text-sm text-gray-500">
+                    <div className="flex items-center">
+                      <div className={`w-2 h-2 rounded-full ${isBoldActionCompleted ? 'bg-green-500' : 'bg-gray-300'}`} />
+                      <span className="ml-2">{isBoldActionCompleted ? 'Completed' : 'Not Completed'}</span>
+                    </div>
+                  </td>
+                  <td className="py-3 text-sm text-gray-500">
+                    <div className="flex items-center">
+                      <div className={`w-2 h-2 rounded-full ${isStandupCompleted ? 'bg-green-500' : 'bg-gray-300'}`} />
+                      <span className="ml-2">{isStandupCompleted ? 'Completed' : 'Not Completed'}</span>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
           <tfoot>
-            <tr className="bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                Total Completed
+            <tr className="border-t border-gray-200">
+              <td className="py-3 text-sm font-medium text-gray-900">
+                Weekly Totals
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {totalTrainings} / {team.teamSize}
+              <td className="py-3 text-sm text-gray-500">
+                {team.members.filter(m => m.allWeeklyData?.[currentWeekIndex]?.trainings.some(t => t.completed)).length}/{team.teamSize}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {totalBoldActions} / {team.teamSize}
+              <td className="py-3 text-sm text-gray-500">
+                {team.members.filter(m => m.allWeeklyData?.[currentWeekIndex]?.boldActions.some(b => b.completed)).length}/{team.teamSize}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {totalStandups} / {team.teamSize}
+              <td className="py-3 text-sm text-gray-500">
+                {team.members.filter(m => m.allWeeklyData?.[currentWeekIndex]?.standups.some(s => s.completed)).length}/{team.teamSize}
               </td>
             </tr>
           </tfoot>
@@ -219,7 +324,7 @@ const FourWeekMetrics = ({ team }: { team: TeamMetrics }) => {
               <th className="col-span-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Team Member
               </th>
-              {team.members[0]?.fourWeekProgress?.weeklyData.map((week, index) => (
+              {team.members[0]?.fourWeekProgress?.weeklyData?.map((_, index: number) => (
                 <th key={index} className="col-span-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Week {index + 1}
                 </th>
@@ -232,13 +337,13 @@ const FourWeekMetrics = ({ team }: { team: TeamMetrics }) => {
                 <td className="col-span-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {member.firstName} {member.lastName}
                 </td>
-                {member.fourWeekProgress?.weeklyData.map((week, index) => (
+                {member.fourWeekProgress?.weeklyData?.map((week, index: number) => (
                   <td key={index} className="col-span-3 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="space-y-2">
                       <div className="flex items-center">
                         <CheckCircle2 
                           className={`w-4 h-4 ${
-                            week.trainings.some(t => t.completed) ? 'text-green-500' : 'text-gray-300'
+                            week.trainings.some((t: { completed: boolean }) => t.completed) ? 'text-green-500' : 'text-gray-300'
                           }`}
                         />
                         <span className="ml-2">Training</span>
@@ -246,7 +351,7 @@ const FourWeekMetrics = ({ team }: { team: TeamMetrics }) => {
                       <div className="flex items-center">
                         <CheckCircle2 
                           className={`w-4 h-4 ${
-                            week.boldActions.some(b => b.completed) ? 'text-green-500' : 'text-gray-300'
+                            week.boldActions.some((b: { completed: boolean }) => b.completed) ? 'text-green-500' : 'text-gray-300'
                           }`}
                         />
                         <span className="ml-2">Bold Action</span>
@@ -254,7 +359,7 @@ const FourWeekMetrics = ({ team }: { team: TeamMetrics }) => {
                       <div className="flex items-center">
                         <CheckCircle2 
                           className={`w-4 h-4 ${
-                            week.standups.some(s => s.completed) ? 'text-green-500' : 'text-gray-300'
+                            week.standups.some((s: { completed: boolean }) => s.completed) ? 'text-green-500' : 'text-gray-300'
                           }`}
                         />
                         <span className="ml-2">Standup</span>
@@ -297,15 +402,28 @@ const FourWeekMetrics = ({ team }: { team: TeamMetrics }) => {
 const SupervisorRow = ({ team }: { team: TeamMetrics }) => {
   const [isExpanded, setIsExpanded] = useState(false)
 
-  // Calculate weekly totals
+  // Calculate weekly totals for the current week (index 0)
   const weeklyTotals = {
     trainings: team.members.reduce((total, member) => 
-      total + (hasCompletedThisWeek(member.weeklyProgress?.trainings) ? 1 : 0), 0),
-    boldActions: team.members.reduce((total, member) => 
-      total + (hasCompletedThisWeek(member.weeklyProgress?.boldActions) ? 1 : 0), 0),
+      total + (wasCompletedInWeek(member.weeklyProgress?.trainings, 0) ? 1 : 0), 0),
+    boldActions: team.members.reduce((total, member) => {
+      // Check if the member has any completed bold actions for the current week
+      const hasCompletedBoldAction = wasCompletedInWeek(member.weeklyProgress?.boldActions, 0);
+      if (hasCompletedBoldAction) {
+        console.log(`Found completed bold action for member: ${member.firstName} ${member.lastName}`);
+      }
+      return total + (hasCompletedBoldAction ? 1 : 0);
+    }, 0),
     standups: team.members.reduce((total, member) => 
-      total + (hasCompletedThisWeek(member.weeklyProgress?.standups) ? 1 : 0), 0)
+      total + (wasCompletedInWeek(member.weeklyProgress?.standups, 0) ? 1 : 0), 0)
   }
+
+  // Log weekly totals for debugging
+  console.log('Weekly totals:', {
+    supervisorName: team.supervisorName,
+    totals: weeklyTotals,
+    teamSize: team.teamSize
+  });
 
   // Calculate 4-week totals
   const fourWeekTotals = {
@@ -391,7 +509,12 @@ const SupervisorRow = ({ team }: { team: TeamMetrics }) => {
   )
 }
 
-export default function ExecutiveOverview({ teams }: ExecutiveOverviewProps) {
+export default function ExecutiveOverview({ 
+  teams,
+  weeklyTrainings,
+  weeklyBoldActions,
+  weeklyStandups 
+}: ExecutiveOverviewProps) {
   return (
     <Card className="bg-white rounded-none border-0 mb-8">
       <CardHeader className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] px-8 py-6">
@@ -399,6 +522,17 @@ export default function ExecutiveOverview({ teams }: ExecutiveOverviewProps) {
           <div>
             <CardTitle className="text-xl sm:text-2xl font-semibold text-white">Team Performance</CardTitle>
             <p className="text-white/80">Weekly supervisor metrics and team progress tracking</p>
+            <div className="mt-4 grid grid-cols-3 gap-4">
+              <div className="text-white/80">
+                <span className="font-medium">Trainings:</span> {weeklyTrainings.completed}/{weeklyTrainings.total}
+              </div>
+              <div className="text-white/80">
+                <span className="font-medium">Bold Actions:</span> {weeklyBoldActions.completed}/{weeklyBoldActions.total}
+              </div>
+              <div className="text-white/80">
+                <span className="font-medium">Standups:</span> {weeklyStandups.completed}/{weeklyStandups.total}
+              </div>
+            </div>
           </div>
           <Button
             onClick={() => window.location.reload()}

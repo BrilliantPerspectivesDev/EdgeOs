@@ -1,0 +1,168 @@
+{
+  "brand": {
+    "name": "LeaderForge",
+    "tagline": "Turning potential into performance"
+  },
+  "hero": {
+    "headline": "Turn Potential into Performance",
+    "subheadline": "The proven leadership system that transforms ordinary teams into high-performance cultures — used by Dr. Dionne van Zyl to build 27 startups and distilled from his PhD research on the world's best business leaders.",
+    "description": "Online, on-demand, and built for busy founders and leadership teams who want real results — fast.",
+    "cta": "Get Started – Choose Your Plan"
+  },
+  "modules": {
+    "series": [
+      {
+        "name": "Foundation Series",
+        "subtitle": "(12 Training Sessions)",
+        "platform": "(On LeaderForge Platform)",
+        "sessions": [
+          { "number": 1, "title": "A Team of Leaders – A New Paradigm", "startup": false, "growth": true, "allIn": true },
+          { "number": 2, "title": "What on Earth are we Doing?", "startup": true, "growth": true, "allIn": true },
+          { "number": 3, "title": "Building a High Performance Trust Culture", "startup": false, "growth": true, "allIn": true }
+        ]
+      },
+      {
+        "name": "Productivity Series",
+        "subtitle": "(12 Training Sessions)",
+        "platform": "(On LeaderForge Platform)",
+        "sessions": [
+          { "number": 4, "title": "Cognitive Control: The key to productivity", "startup": true, "growth": true, "allIn": true },
+          { "number": 5, "title": "The Superpower of Deep Work", "startup": true, "growth": true, "allIn": true },
+          { "number": 6, "title": "Three Ways to Grow Your Business", "startup": false, "growth": true, "allIn": true }
+        ]
+      },
+      {
+        "name": "Innovation Series",
+        "subtitle": "(12 Training Sessions)",
+        "platform": "(On LeaderForge Platform)",
+        "sessions": [
+          { "number": 7, "title": "Thin Slicing: The key to Innovation", "startup": false, "growth": true, "allIn": true },
+          { "number": 8, "title": "Making Less Meetings Work", "startup": false, "growth": true, "allIn": true },
+          { "number": 9, "title": "Making Work Effortless", "startup": false, "growth": true, "allIn": true }
+        ]
+      },
+      {
+        "name": "Executive Series",
+        "subtitle": "(12 Training Sessions)",
+        "platform": "(On LeaderForge Platform)",
+        "sessions": [
+          { "number": 10, "title": "Necessary Endings and New Beginnings", "startup": false, "growth": false, "allIn": true },
+          { "number": 11, "title": "Developing Next Level Leaders", "startup": false, "growth": false, "allIn": true },
+          { "number": 12, "title": "Upgrading Economics & Pricing Strategy", "startup": false, "growth": false, "allIn": true }
+        ]
+      }
+    ],
+    "plans": {
+      "startup": { "name": "Startup", "sessions": 12 },
+      "growth": { "name": "Growth", "sessions": 36 },
+      "allIn": { "name": "All-In", "sessions": 48 }
+    }
+  },
+  "problem": {
+    "headline": "The Problem Most Growing Companies Face",
+    "paragraphs": [
+      "You've got a great product and a solid team… but something's missing.",
+      "Meetings drag. Projects stall. People are busy but not producing breakthroughs.",
+      "You're stuck between \"startup hustle\" and real scalable performance."
+    ]
+  },
+  "solution": {
+    "headline": "The LeaderForge Solution",
+    "paragraphs": [
+      "48 short, powerful training sessions (15–25 min each) delivered straight to your team's phones and laptops.",
+      "No fluff. No endless courses. Just the exact playbooks that took 27 companies from idea to exit.",
+      "Backed by neuroscience, battle-tested in real companies, and designed to create a Team of Leaders — not just a team with a leader."
+    ]
+  },
+  "features": {
+    "headline": "What You Actually Get",
+    "bonus": "Plus bonus AI-Infused Culture module (2026 edition) included in every plan."
+  },
+  "outcomes": {
+    "headline": "Real Outcomes Our Members See in 90 Days",
+    "items": [
+      "3–5x faster project delivery using Thin Slicing & Deep Work",
+      "50–80% fewer wasted meetings",
+      "Crystal-clear clarity on \"what done means\" across the entire company",
+      "Team members self-managing with CUE + Buckets (no more babysitting)",
+      "A measurable shift from \"busy\" to \"high-leverage contribution\""
+    ]
+  },
+  "audience": {
+    "headline": "Who This Is For",
+    "items": [
+      "Founders & CEOs of 1–50 person companies",
+      "Leadership teams who are tired of generic leadership training",
+      "Companies that want a repeatable system (not another one-off offsite)"
+    ]
+  },
+  "pricing": {
+    "headline": "Choose Your Plan",
+    "plans": [
+      {
+        "name": "Startup Plan",
+        "sessions": "12 core Foundation + Productivity sessions",
+        "description": "Perfect for early-stage teams nailing culture and execution",
+        "features": ["Unlimited team members", "Cancel anytime"],
+        "highlighted": false
+      },
+      {
+        "name": "Growth Plan",
+        "sessions": "36 sessions (everything in Startup + full Innovation Series)",
+        "description": "For companies scaling fast and needing rapid innovation cycles",
+        "features": [
+          "Most popular plan",
+          "Includes one SoS call with Dionne van Zyl",
+          "Mobile app (iOS & Android)",
+          "Downloadable playbooks & worksheets",
+          "Dashboard to see how your team are learning and growing"
+        ],
+        "highlighted": true
+      },
+      {
+        "name": "All-In Plan",
+        "sessions": "Full 48-session library + Executive Series + future updates",
+        "description": "Everything you need to build a true Team of Leaders that runs without you",
+        "features": [
+          "Includes three SoS calls with Dr. Dionne van Zyl",
+          "Includes mobile app",
+          "Dashboard to see how your team are learning and growing",
+          "Mobile app (iOS & Android)",
+          "Downloadable playbooks & worksheets"
+        ],
+        "highlighted": false
+      }
+    ],
+    "allPlansInclude": [
+      "Mobile app (iOS & Android)",
+      "Downloadable playbooks & worksheets"
+    ]
+  },
+  "credibility": {
+    "headline": "Built by Someone Who's Done It — 27 Times",
+    "paragraphs": [
+      "Dr. Dionne van Zyl didn't just study the best leaders for his PhD — he built and scaled 27 companies using this exact framework.",
+      "LeaderForge is the distillation of everything that actually worked (and everything that didn't)."
+    ],
+    "testimonial": {
+      "quote": "I wish I'd had this 20 companies ago. It would have saved me millions in mistakes and years of frustration.",
+      "author": "Dr. Dionne van Zyl"
+    }
+  },
+  "guarantee": {
+    "headline": "No risk. Just results.",
+    "paragraphs": [
+      "Every plan comes with a 30-day no-questions-asked refund.",
+      "If your team isn't noticeably better in 30 days, you don't pay."
+    ]
+  },
+  "finalCta": {
+    "headline": "Ready to stop managing people and start leading leaders?",
+    "cta": "Get Instant Access – Choose Your Plan",
+    "ps": "P.S. The average LeaderForge company sees measurable culture and output shifts in under 45 days. The only question is: how much longer can you afford to wait?"
+  },
+  "footer": {
+    "copyright": "LeaderForge © 2026 – Turning potential into performance."
+  }
+}
+
