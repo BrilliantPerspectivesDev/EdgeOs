@@ -27,9 +27,11 @@ const AuthContext = createContext<AuthContextType>({
 
 // Helper to check if a path is a public page that doesn't require auth
 const isPublicPath = (path: string | null): boolean => {
-  if (!path) return false
+  // If path is null/undefined, check window.location as fallback (client-side only)
+  const currentPath = path || (typeof window !== 'undefined' ? window.location.pathname : null)
+  if (!currentPath) return true // Default to public if we can't determine path (prevents redirect flash)
   const publicPaths = ['/signin', '/company-setup', '/join/team', '/join/supervisor', '/forgot-password', '/landing', '/register']
-  return publicPaths.some(p => path === p || path.startsWith(p + '/') || path.startsWith(p + '?'))
+  return publicPaths.some(p => currentPath === p || currentPath.startsWith(p + '/') || currentPath.startsWith(p + '?'))
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
