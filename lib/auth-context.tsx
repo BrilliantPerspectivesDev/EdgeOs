@@ -97,10 +97,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setCompanyName(null)
           setPermissions([])
           
-          // Only redirect to signin if not already on an auth page and if initialized
+          // Only redirect if not already on a public page and if initialized
           if (!isAuthPage && initialized) {
-            console.log('No user, redirecting to signin')
-            router.push('/signin')
+            console.log('No user, redirecting to landing page')
+            router.push('/landing')
           }
         } else {
           try {
@@ -150,13 +150,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 await new Promise(resolve => setTimeout(resolve, 1000))
                 // The effect will re-run due to retryCount change
               } else if (!isAuthPage) {
-                router.push('/signin')
+                router.push('/landing')
               }
             }
           } catch (error) {
             console.error('Error fetching user data:', error)
             if (!isAuthPage) {
-              router.push('/signin')
+              router.push('/landing')
             }
           }
         }
