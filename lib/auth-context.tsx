@@ -30,7 +30,7 @@ const isPublicPath = (path: string | null): boolean => {
   // If path is null/undefined, check window.location as fallback (client-side only)
   const currentPath = path || (typeof window !== 'undefined' ? window.location.pathname : null)
   if (!currentPath) return true // Default to public if we can't determine path (prevents redirect flash)
-  const publicPaths = ['/signin', '/company-setup', '/join/team', '/join/supervisor', '/forgot-password', '/landing', '/register']
+  const publicPaths = ['/signin', '/company-setup', '/join/team', '/join/supervisor', '/forgot-password', '/landing', '/register', '/privacy', '/terms']
   return publicPaths.some(p => currentPath === p || currentPath.startsWith(p + '/') || currentPath.startsWith(p + '?'))
 }
 

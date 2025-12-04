@@ -383,15 +383,16 @@ export default function LandingPage() {
               height={30}
             />
             <span className="text-white/40 text-sm">
-              {landingContent.footer.copyright}
+              © 2025 i49 Group, Inc. All rights reserved.
             </span>
           </div>
           <div className="flex items-center gap-6">
-            <Link href="/signin" className="text-white/40 hover:text-white/60 text-sm transition-colors">
-              Log in
+            <Link href="/privacy" className="text-white/40 hover:text-white/60 text-sm transition-colors">
+              Privacy Policy
             </Link>
-            <Link href="/register" className="text-white/40 hover:text-white/60 text-sm transition-colors">
-              Sign up
+            <span className="text-white/20">•</span>
+            <Link href="/terms" className="text-white/40 hover:text-white/60 text-sm transition-colors">
+              Terms of Service
             </Link>
           </div>
         </div>

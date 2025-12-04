@@ -9,7 +9,7 @@ import { Toaster } from '@/components/ui/toaster'
 export function LayoutContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
   const pathname = usePathname()
-  const isPublicPage = pathname === '/signin' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/company-setup' || pathname === '/landing'
+  const isPublicPage = pathname === '/signin' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/company-setup' || pathname === '/landing' || pathname === '/privacy' || pathname === '/terms'
 
   // Public pages render immediately without waiting for auth
   if (isPublicPage) {
