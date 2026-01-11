@@ -254,50 +254,113 @@ export default function LandingPage() {
       {/* Pricing Section */}
       <section id="pricing" className="py-24 px-6 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-[#00A8E8]/5 via-transparent to-[#5B4FD9]/5 pointer-events-none" />
-        <div className="max-w-6xl mx-auto relative z-10">
+        <div className="max-w-5xl mx-auto relative z-10">
           <h2 className="text-3xl md:text-5xl font-bold mb-16 text-center text-white">
             {landingContent.pricing.headline}
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {landingContent.pricing.plans.map((plan, index) => (
+          {/* Pricing Table */}
+          <div className="bg-white/[0.02] border border-white/10 rounded-2xl overflow-hidden mb-8">
+            {/* Table Header */}
+            <div className="grid grid-cols-4 gap-4 px-6 py-5 bg-white/[0.03] border-b border-white/10">
+              <div className="text-white/60 font-medium">Feature</div>
+              <div className="text-center font-semibold text-white">Silver</div>
+              <div className="text-center font-semibold text-[#00A8E8]">Gold</div>
+              <div className="text-center font-semibold text-[#FFD700]">Platinum</div>
+            </div>
+            
+            {/* Table Body */}
+            {landingContent.pricing.features.map((feature, index) => (
               <div 
-                key={index}
-                className={`relative rounded-2xl p-8 border transition-all hover:scale-[1.02] ${
-                  plan.highlighted 
-                    ? 'bg-gradient-to-b from-[#00A8E8]/10 to-transparent border-[#00A8E8]/40 shadow-[0_0_60px_-15px_rgba(0,168,232,0.3)]' 
-                    : 'bg-white/[0.02] border-white/10 hover:border-white/20'
-                }`}
+                key={index} 
+                className={`grid grid-cols-4 gap-4 px-6 py-4 ${
+                  index !== landingContent.pricing.features.length - 1 ? 'border-b border-white/5' : ''
+                } hover:bg-white/[0.02] transition-colors`}
               >
-                {plan.highlighted && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#00A8E8] text-white text-xs font-semibold rounded-full">
-                    Most Popular
-                  </div>
-                )}
-                
-                <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                <p className="text-sm text-[#00A8E8] mb-4">{plan.sessions}</p>
-                <p className="text-white/50 text-sm mb-6">{plan.description}</p>
-                
-                <div className="space-y-3 mb-8">
-                  {plan.features.map((feature, fIndex) => (
-                    <div key={fIndex} className="flex items-center gap-3">
-                      <Check className="w-4 h-4 text-[#00A8E8] flex-shrink-0" />
-                      <span className="text-sm text-white/70">{feature}</span>
-                    </div>
-                  ))}
+                <div className="text-white/80 font-medium text-sm md:text-base">{feature.name}</div>
+                <div className="text-center text-white/70 text-sm md:text-base">
+                  {feature.silver.includes('✓') ? (
+                    <span className="text-emerald-400">{feature.silver}</span>
+                  ) : feature.silver === '—' ? (
+                    <span className="text-white/30">{feature.silver}</span>
+                  ) : (
+                    feature.silver
+                  )}
                 </div>
-                
-                <Link
-                  href="/register"
-                  className={`block text-center py-3 px-6 rounded-full font-semibold transition-all ${
-                    plan.highlighted
-                      ? 'bg-[#00A8E8] hover:bg-[#00A8E8]/90 text-white'
-                      : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
-                  }`}
-                >
-                  Get Started
-                </Link>
+                <div className="text-center text-white/70 text-sm md:text-base">
+                  {feature.gold.includes('✓') ? (
+                    <span className="text-emerald-400">{feature.gold}</span>
+                  ) : feature.gold === '—' ? (
+                    <span className="text-white/30">{feature.gold}</span>
+                  ) : (
+                    feature.gold
+                  )}
+                </div>
+                <div className="text-center text-white/70 text-sm md:text-base">
+                  {feature.platinum.includes('✓') ? (
+                    <span className="text-emerald-400">{feature.platinum}</span>
+                  ) : feature.platinum === '—' ? (
+                    <span className="text-white/30">{feature.platinum}</span>
+                  ) : (
+                    feature.platinum
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA Buttons */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+            <Link
+              href="/register"
+              className="block text-center py-4 px-6 rounded-full font-semibold bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all"
+            >
+              Get Silver
+            </Link>
+            <Link
+              href="/register"
+              className="block text-center py-4 px-6 rounded-full font-semibold bg-[#00A8E8] hover:bg-[#00A8E8]/90 text-white transition-all shadow-[0_0_30px_-10px_rgba(0,168,232,0.5)]"
+            >
+              Get Gold
+            </Link>
+            <Link
+              href="/register"
+              className="block text-center py-4 px-6 rounded-full font-semibold bg-gradient-to-r from-[#FFD700]/20 to-[#FFA500]/20 hover:from-[#FFD700]/30 hover:to-[#FFA500]/30 text-white border border-[#FFD700]/30 transition-all"
+            >
+              Get Platinum
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Add-Ons Section */}
+      <section className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+            {landingContent.addOns.headline}
+          </h2>
+          <p className="text-white/60 mb-12">{landingContent.addOns.subtitle}</p>
+          
+          {/* Add-Ons Table */}
+          <div className="bg-white/[0.02] border border-white/10 rounded-2xl overflow-hidden">
+            {/* Table Header */}
+            <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-white/[0.03] border-b border-white/10">
+              <div className="col-span-3 text-white/60 font-medium">Add-On</div>
+              <div className="col-span-7 text-white/60 font-medium">Description</div>
+              <div className="col-span-2 text-right text-white/60 font-medium">Price</div>
+            </div>
+            
+            {/* Table Body */}
+            {landingContent.addOns.items.map((addon, index) => (
+              <div 
+                key={index} 
+                className={`grid grid-cols-12 gap-4 px-6 py-5 ${
+                  index !== landingContent.addOns.items.length - 1 ? 'border-b border-white/5' : ''
+                } hover:bg-white/[0.02] transition-colors`}
+              >
+                <div className="col-span-3 text-white font-medium">{addon.name}</div>
+                <div className="col-span-7 text-white/70">{addon.description}</div>
+                <div className="col-span-2 text-right text-[#00A8E8] font-semibold">{addon.price}</div>
               </div>
             ))}
           </div>

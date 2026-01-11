@@ -97,45 +97,32 @@
     ]
   },
   "pricing": {
-    "headline": "Choose Your Plan",
-    "plans": [
-      {
-        "name": "Startup Plan",
-        "sessions": "12 core Foundation + Productivity sessions",
-        "description": "Perfect for early-stage teams nailing culture and execution",
-        "features": ["Unlimited team members", "Cancel anytime"],
-        "highlighted": false
-      },
-      {
-        "name": "Growth Plan",
-        "sessions": "36 sessions (everything in Startup + full Innovation Series)",
-        "description": "For companies scaling fast and needing rapid innovation cycles",
-        "features": [
-          "Most popular plan",
-          "Includes one SoS call with Dionne van Zyl",
-          "Mobile app (iOS & Android)",
-          "Downloadable playbooks & worksheets",
-          "Dashboard to see how your team are learning and growing"
-        ],
-        "highlighted": true
-      },
-      {
-        "name": "All-In Plan",
-        "sessions": "Full 48-session library + Executive Series + future updates",
-        "description": "Everything you need to build a true Team of Leaders that runs without you",
-        "features": [
-          "Includes three SoS calls with Dr. Dionne van Zyl",
-          "Includes mobile app",
-          "Dashboard to see how your team are learning and growing",
-          "Mobile app (iOS & Android)",
-          "Downloadable playbooks & worksheets"
-        ],
-        "highlighted": false
-      }
+    "headline": "LeaderForge Pricing Plans",
+    "features": [
+      { "name": "Annual Price", "silver": "$5,000", "gold": "$8,000", "platinum": "$10,000" },
+      { "name": "Users", "silver": "Unlimited", "gold": "Unlimited", "platinum": "Unlimited" },
+      { "name": "48 Core Trainings (\"The Edge 48\")", "silver": "✓ Included", "gold": "✓ Included", "platinum": "✓ Included" },
+      { "name": "Bold Action Management", "silver": "Self", "gold": "Self or Leader", "platinum": "Self or Leader" },
+      { "name": "5-Min Leader Meets", "silver": "—", "gold": "Team Leader", "platinum": "Multi-Level" },
+      { "name": "Learning Pathways", "silver": "Set Sequence", "gold": "Managed", "platinum": "AI-Driven" },
+      { "name": "Coaching Level", "silver": "—", "gold": "—", "platinum": "AI Coach" }
     ],
-    "allPlansInclude": [
-      "Mobile app (iOS & Android)",
-      "Downloadable playbooks & worksheets"
+    "plans": ["Silver", "Gold", "Platinum"]
+  },
+  "addOns": {
+    "headline": "Add-Ons",
+    "subtitle": "Optional Enhancements",
+    "items": [
+      {
+        "name": "Own Content",
+        "description": "Upload and use your organization's proprietary content within LeaderForge",
+        "price": "$2,000"
+      },
+      {
+        "name": "Tenant Option",
+        "description": "Branded, dedicated tenant (\"Business-in-a-Box\" experience)",
+        "price": "$15,000 + 25%"
+      }
     ]
   },
   "credibility": {
